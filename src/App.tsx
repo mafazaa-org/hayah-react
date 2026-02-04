@@ -1,18 +1,34 @@
-import './index.css';
+import './index.css'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { PrivateRoute } from './components/PrivateRoute'
+import { DashboardPage } from './pages/DashboardPage'
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { LoginPage } from './pages/LoginPage'
+import { RegistrationPage } from './pages/RegistrationPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { VerifyEmailPage } from './pages/VerifyEmailPage'
 
 function App() {
   return (
-    <div>
-      <h1 className='text-3xl font-bold underline'>أهلا بك في مشروعنا</h1>
-      <p className='text-sm text-gray-500'>هذا هو النص الافتراضي للتطبيق</p>
-      <button className='bg-blue-500 text-white px-4 py-2 rounded-md'>اضافة مهمة</button>
-      <button className='bg-red-500 text-white px-4 py-2 rounded-md'>اضافة مهمة</button>
-      <button className='bg-green-500 text-white px-4 py-2 rounded-md'>اضافة مهمة</button>
-      <button className='bg-yellow-500 text-white px-4 py-2 rounded-md'>اضافة مهمة</button>
-      <button className='bg-purple-500 text-white px-4 py-2 rounded-md'>اضافة مهمة</button>
-      <button className='bg-orange-500 text-white px-4 py-2 rounded-md'>اضافة مهمة</button>
-    </div>
-  );
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
-export default App;
+export default App

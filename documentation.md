@@ -1,3 +1,5 @@
+# Hayah Frontend Documentation
+
 ## Phase 1 – Project Setup & Configuration (Frontend)
 
 This document describes everything that was implemented in **Phase 1 (Project Setup & Configuration)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted here.
@@ -252,3 +254,359 @@ According to `FRONTEND_TODO.md`, the status of Phase 1 items is:
     - Implementation deferred to **Phase 12: Real-time Updates**.
 
 Phase 1 is therefore **functionally complete** for project initialization and configuration, with WebSocket behavior clearly planned and linked to its dedicated real-time phase.
+
+---
+
+## Phase 2 – Authentication (Auth)
+
+This section describes everything implemented in **Phase 2 (Authentication (Auth))** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. Login Page
+
+- **File**
+  - `src/pages/LoginPage.tsx`
+
+- **Route**
+  - `/login` (public).
+
+- **UI**
+  - Centered card layout (Tailwind): `min-h-screen flex items-center justify-center bg-slate-950 px-4`, card `max-w-md rounded-2xl bg-slate-900/70 p-8 shadow-xl border border-slate-800`.
+  - **Heading:** «تسجيل الدخول إلى حياة» (or «هيا» depending on copy).
+  - **Subtext:** «أدخل البريد الإلكتروني وكلمة المرور للمتابعة.»
+  - **Form fields:**
+    - **Email:** `id="email"`, `type="email"`, `autoComplete="email"`, `required`, placeholder `you@example.com`, label «البريد الإلكتروني».
+    - **Password:** `id="password"`, `type="password"`, `autoComplete="current-password"`, `required`, placeholder `••••••••`, label «كلمة المرور».
+  - **Link:** «نسيت كلمة المرور؟» next to the password label, `to="/forgot-password"`, `text-xs font-medium text-sky-400`.
+  - **Submit button:** «تسجيل الدخول» / «جارٍ تسجيل الدخول...» when `isSubmitting`, disabled while submitting, full-width, `bg-sky-500` with focus ring.
+  - **Footer link:** «ليس لديك حساب؟» + «إنشاء حساب» linking to `/register`.
+  - **Error display:** Red alert box when `error` is set (e.g. «تعذّر تسجيل الدخول. يرجى التحقق من البيانات والمحاولة مرة أخرى.»).
+  - All copy is in Arabic; layout is RTL-friendly.
+
+- **State**
+  - `email`, `password` (controlled inputs).
+  - `isSubmitting` (disables submit, shows loading copy).
+  - `error` (string or null, shown in alert).
+
+- **API integration**
+  - On submit: `apiClient.post<LoginResponse>('/auth/login', { email, password })`.
+  - **Response type:** `LoginResponse = { token: string }`.
+  - On success:
+    - Token stored in `localStorage` under `import.meta.env.VITE_JWT_STORAGE_KEY` or fallback `'hayah_auth_token'`.
+    - Redirect: `navigate(from, { replace: true })` where `from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/'` (redirect-after-login from `PrivateRoute` state, or dashboard `/`).
+  - On failure: set `error` to the Arabic message above; no redirect.
+
+- **Dependencies**
+  - `react-router-dom`: `Link`, `useLocation`, `useNavigate`.
+  - `apiClient` from `../apiClient`.
+
+---
+
+### 2. Registration Page
+
+- **File**
+  - `src/pages/RegistrationPage.tsx`
+
+- **Route**
+  - `/register` (public).
+
+- **UI**
+  - Same card/layout pattern as Login (centered, slate card, RTL, Arabic).
+  - **Heading:** «إنشاء حساب جديد».
+  - **Subtext:** «أدخل بياناتك لإنشاء حساب والبدء باستخدام حياة.»
+  - **Form fields:**
+    - **Name:** `id="name"`, `type="text"`, `autoComplete="name"`, `required`, placeholder «الاسم الكامل», label «الاسم».
+    - **Email:** same as Login (البريد الإلكتروني, `you@example.com`).
+    - **Password:** «كلمة المرور», `autoComplete="new-password"`, placeholder `••••••••`.
+  - **Submit button:** «إنشاء حساب» / «جارٍ إنشاء الحساب...».
+  - **Footer link:** «لديك حساب؟» + «تسجيل الدخول» linking to `/login`.
+  - **Error:** Red alert with «تعذّر إنشاء الحساب. يرجى التحقق من البيانات والمحاولة مرة أخرى.» on API error.
+
+- **State**
+  - `name`, `email`, `password`, `isSubmitting`, `error`.
+
+- **API integration**
+  - On submit: `apiClient.post<RegisterResponse>('/auth/register', { name, email, password })`.
+  - **Response type:** `RegisterResponse = { token: string }`.
+  - On success: store token in `localStorage` (same key as Login), then `navigate('/', { replace: true })` (dashboard).
+  - On failure: set `error` as above.
+
+- **Dependencies**
+  - `react-router-dom`: `Link`, `useNavigate`.
+  - `apiClient` from `../apiClient`.
+
+---
+
+### 3. Protected routes (PrivateRoute wrapper)
+
+- **Auth utility – file**
+  - `src/utils/auth.ts`
+
+- **Auth utility – behaviour**
+  - **JWT key:** `import.meta.env.VITE_JWT_STORAGE_KEY || 'hayah_auth_token'` (same as `apiClient`).
+  - **`isAuthenticated(): boolean`**  
+    - Returns `true` only if `window` is defined and `localStorage.getItem(JWT_STORAGE_KEY)` is truthy; otherwise `false` (SSR-safe).
+  - **`getToken(): string | null`**  
+    - Returns the stored JWT or `null`; returns `null` when `window` is undefined.
+  - **`clearToken(): void`**  
+    - Removes the JWT from `localStorage`; no-op when `window` is undefined.
+
+- **PrivateRoute component – file**
+  - `src/components/PrivateRoute.tsx`
+
+- **PrivateRoute component – props**
+  - `children: ReactNode` (the protected content).
+
+- **PrivateRoute component – behaviour**
+  - Uses `useLocation()` from `react-router-dom`.
+  - If `!isAuthenticated()`: renders `<Navigate to="/login" state={{ from: location }} replace />` so:
+    - Unauthenticated users are sent to `/login`.
+    - The current `location` is passed in `state.from` for redirect-after-login.
+  - If authenticated: renders `children` as-is.
+
+- **Usage in app**
+  - The only protected route in Phase 2 is `/`, which renders `<PrivateRoute><DashboardPage /></PrivateRoute>`.
+
+---
+
+### 4. Dashboard placeholder
+
+- **File**
+  - `src/pages/DashboardPage.tsx`
+
+- **Route**
+  - `/` (protected; wrapped by `PrivateRoute`).
+
+- **UI**
+  - Full-page slate background, padded container.
+  - **Heading:** «لوحة التحكم».
+  - **Text:** «مرحباً. هذه لوحة تحكم مؤقتة. سيتم استبدالها بالتخطيط الرئيسي في المرحلة 3.»
+  - Serves as the post-login landing page until Phase 3 (Core Layout & Navigation).
+
+---
+
+### 5. Password reset flow
+
+#### 5.1 Forgot Password page
+
+- **File**
+  - `src/pages/ForgotPasswordPage.tsx`
+
+- **Route**
+  - `/forgot-password` (public).
+
+- **UI**
+  - Same card/layout pattern (Arabic, RTL).
+  - **Heading:** «نسيت كلمة المرور؟»
+  - **Subtext:** «أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.»
+  - **Form (when not success):**
+    - Single field: **Email** (البريد الإلكتروني, `type="email"`, `autoComplete="email"`, `required`, placeholder `you@example.com`).
+    - **Button:** «إرسال رابط إعادة التعيين» / «جارٍ الإرسال...».
+  - **Success state:** After successful API call, form is hidden and a green alert is shown: «تم إرسال الرابط. تحقق من بريدك الإلكتروني واتبع التعليمات.»
+  - **Error:** Red alert: «حدث خطأ. يرجى التحقق من البريد الإلكتروني والمحاولة مرة أخرى.»
+  - **Footer link:** «العودة لتسجيل الدخول» → `/login`.
+
+- **State**
+  - `email`, `isSubmitting`, `error`, `success`.
+
+- **API integration**
+  - On submit: `apiClient.post('/auth/request-password-reset', { email })`.
+  - No response body used; on success set `success` to `true`; on catch set `error`.
+
+#### 5.2 Reset Password page
+
+- **File**
+  - `src/pages/ResetPasswordPage.tsx`
+
+- **Route**
+  - `/reset-password` (public). Token is read from the URL: `useSearchParams()` → `searchParams.get('token') ?? ''`.
+
+- **UI – no token in URL**
+  - Renders a dedicated view:
+    - **Heading:** «رابط غير صالح».
+    - **Text:** «لم يتم توفير رمز إعادة التعيين أو أنه غير صحيح. استخدم رابطاً من بريدك الإلكتروني أو اطلب رابطاً جديداً.»
+    - **Links:** «طلب رابط جديد» → `/forgot-password`, «تسجيل الدخول» → `/login`.
+
+- **UI – token present**
+  - **Heading:** «إعادة تعيين كلمة المرور».
+  - **Subtext:** «أدخل كلمة المرور الجديدة أدناه.»
+  - **Form (when not success):**
+    - **New password:** `id="newPassword"`, `type="password"`, `autoComplete="new-password"`, `required`, `minLength={6}`, label «كلمة المرور الجديدة», placeholder `••••••••`.
+    - **Confirm password:** `id="confirmPassword"`, same attributes, label «تأكيد كلمة المرور».
+    - **Button:** «تعيين كلمة المرور الجديدة» / «جارٍ الحفظ...».
+  - **Success:** Green alert: «تم تغيير كلمة المرور. يمكنك الآن تسجيل الدخول.»
+  - **Error:** Red alert; messages include «كلمتا المرور غير متطابقتين.» (client-side), «كلمة المرور يجب أن تكون 6 أحرف على الأقل.» (client-side), or «تعذّر إعادة تعيين كلمة المرور. قد يكون الرابط منتهي الصلاحية. اطلب رابطاً جديداً.» (API failure).
+  - **Footer link:** «العودة لتسجيل الدخول» → `/login`.
+
+- **State**
+  - `token` from URL; `newPassword`, `confirmPassword`, `isSubmitting`, `error`, `success`.
+
+- **Validation (client-side before API)**
+  - Passwords must match; otherwise set error «كلمتا المرور غير متطابقتين.».
+  - Password length ≥ 6; otherwise «كلمة المرور يجب أن تكون 6 أحرف على الأقل.».
+  - If `!token`, set error «رابط إعادة التعيين غير صالح. اطلب رابطاً جديداً.» and do not call API.
+
+- **API integration**
+  - On valid submit: `apiClient.put('/auth/reset-password', { token, newPassword })`.
+  - On success: set `success` to `true`.
+  - On catch: set `error` to the expiry/invalid-link message above.
+
+---
+
+### 6. Email verification (optional)
+
+- **File**
+  - `src/pages/VerifyEmailPage.tsx`
+
+- **Route**
+  - `/verify-email` (public). Token from URL: `useSearchParams()` → `searchParams.get('token') ?? ''`.
+
+- **UI – no token in URL**
+  - **Heading:** «رابط غير صالح».
+  - **Text:** «لم يتم توفير رمز التحقق. استخدم الرابط المرسل إلى بريدك الإلكتروني.»
+  - **Error (if set):** «رابط التحقق غير صالح. لم يتم توفير رمز التحقق.»
+  - **Links:** «تسجيل الدخول» → `/login`, «إنشاء حساب» → `/register`.
+
+- **UI – token present**
+  - **Heading:** «التحقق من البريد الإلكتروني».
+  - **Status text:**
+    - `verifying`: «جارٍ التحقق من بريدك الإلكتروني...»
+    - `success`: «تم التحقق من بريدك الإلكتروني بنجاح.»
+    - `error`: «لم نتمكن من التحقق من بريدك الإلكتروني.»
+    - `idle`: «جارٍ التحقق...»
+  - **Success:** Green alert: «تم تأكيد بريدك الإلكتروني. يمكنك الآن تسجيل الدخول.»
+  - **Error:** Red alert: «تعذّر التحقق من البريد الإلكتروني. قد يكون الرابط منتهي الصلاحية.»
+  - **Links:** «تسجيل الدخول», «إنشاء حساب» (same as above).
+
+- **State**
+  - `status: 'idle' | 'verifying' | 'success' | 'error'`, `error` (string | null).
+
+- **API integration**
+  - **Auto-verify on mount:** When `token` is present, a `useEffect` runs once:
+    - Sets `status` to `'verifying'`, clears `error`.
+    - Calls `apiClient.post('/auth/verify-email', { token })`.
+    - On success: sets `status` to `'success'` (unless component unmounted; `cancelled` guard).
+    - On catch: sets `status` to `'error'` and `error` to the expiry message above.
+  - Cleanup: sets `cancelled = true` so state is not updated after unmount.
+
+- **When no token**
+  - `useEffect` sets `status` to `'error'` and `error` to the “no token” message; the “no token” view is rendered (with token check `if (!token)` before the main return).
+
+---
+
+### 7. Routing configuration (Phase 2)
+
+- **File**
+  - `src/App.tsx`
+
+- **Router**
+  - `BrowserRouter` wraps the app; single `Routes` with the following `Route` entries.
+
+- **Public routes (no auth required)**
+  - `/login` → `LoginPage`.
+  - `/register` → `RegistrationPage`.
+  - `/forgot-password` → `ForgotPasswordPage`.
+  - `/reset-password` → `ResetPasswordPage`.
+  - `/verify-email` → `VerifyEmailPage`.
+
+- **Protected route**
+  - `/` → `<PrivateRoute><DashboardPage /></PrivateRoute>`.
+
+- **Fallback**
+  - `path="*"` → `<Navigate to="/" replace />`. So any unknown path goes to `/`; if the user is not authenticated, `PrivateRoute` redirects to `/login` with `state.from` set.
+
+- **Imports**
+  - All page components and `PrivateRoute` are imported and used as above.
+
+---
+
+### 8. API client behaviour for auth (Phase 2)
+
+- **File**
+  - `src/apiClient.ts` (existing from Phase 1; behaviour extended for auth routes).
+
+- **Base URL**
+  - `import.meta.env.VITE_API_BASE_URL` with fallback `'http://localhost:3000/api/v1'` (if present in current codebase).
+
+- **Request interceptor (auth-related behaviour)**
+  - **Public paths:** Requests whose URL (e.g. `config.url`) starts with one of:
+    - `/auth/register`
+    - `/auth/login`
+    - `/auth/verify-email`
+    - `/auth/request-password-reset` (forgot password)
+    - `/auth/reset-password`
+  - For these, the interceptor does **not** attach `Authorization: Bearer <token>` (so login, register, verify-email, forgot-password, reset-password work without a token).
+  - For all other requests, when `window` is defined and a token exists in `localStorage` under `VITE_JWT_STORAGE_KEY` or `'hayah_auth_token'`, the interceptor adds `Authorization: Bearer <token>`.
+
+- **Response interceptor (401 handling)**
+  - On `error.response?.status === 401`:
+    - Removes the JWT from `localStorage` (same key as above).
+    - **Redirect guard:** Only redirects to `/login` if the current pathname is **not** in the list of public paths:
+      - `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`.
+    - Redirect is performed via `window.location.href = '/login'` (full page navigation).
+  - The promise is always rejected with the original `AxiosError` so callers can still handle errors (e.g. show messages on login/register/reset forms).
+
+- **Summary**
+  - Auth endpoints do not send the JWT and are not forced away by 401; all other endpoints send the JWT and, on 401, clear it and redirect to login when not on a public page.
+
+---
+
+### 9. Cross-links and user flows
+
+- **Login page**
+  - «نسيت كلمة المرور؟» → `/forgot-password`.
+  - «إنشاء حساب» → `/register`.
+  - After successful login → redirect to `location.state.from.pathname` or `/`.
+
+- **Registration page**
+  - «تسجيل الدخول» → `/login`.
+  - After successful registration → `navigate('/', { replace: true })` (dashboard).
+
+- **Forgot password page**
+  - «العودة لتسجيل الدخول» → `/login`.
+  - After successful request → success message only (no redirect).
+
+- **Reset password page**
+  - Without token: «طلب رابط جديد» → `/forgot-password`, «تسجيل الدخول» → `/login`.
+  - With token: «العودة لتسجيل الدخول» → `/login`.
+  - After successful reset → success message; user can go to login manually.
+
+- **Verify email page**
+  - «تسجيل الدخول» → `/login`, «إنشاء حساب» → `/register` (with or without token).
+
+- **Protected route**
+  - Unauthenticated visit to `/` → redirect to `/login` with `state.from = { pathname: '/', ... }`; after login, user is sent back to `/`.
+
+---
+
+### 10. Summary of Phase 2 status
+
+According to `FRONTEND_TODO.md`, all Phase 2 Authentication items are **completed**:
+
+- **Login Page**
+  - Form UI (Email, Password).
+  - Integration with Login API.
+  - Store JWT Token in LocalStorage.
+  - Link to Forgot Password and Register; redirect-after-login support.
+
+- **Registration Page**
+  - Form UI (Name, Email, Password).
+  - Integration with Register API.
+  - Store JWT and redirect to dashboard; link to Login.
+
+- **Protected Routes**
+  - `PrivateRoute` wrapper using `isAuthenticated()` from `src/utils/auth.ts`.
+  - Unauthorized redirects to `/login` with `state.from` for post-login redirect.
+  - Dashboard placeholder at `/` wrapped by `PrivateRoute`.
+
+- **Password Reset Flow**
+  - Forgot Password page: request reset link via `POST /auth/request-password-reset`.
+  - Reset Password page: set new password via `PUT /auth/reset-password` with token from URL; client-side validation (match, length ≥ 6).
+  - Email verification (optional): Verify Email page; token from URL; auto `POST /auth/verify-email` on mount; success/error and links to login/register.
+
+- **Routing**
+  - All auth routes registered in `App.tsx`; fallback `*` → `/`; `/` protected.
+
+- **API client**
+  - Public auth paths do not send JWT; 401 clears token and redirects to login only when not on a public path.
