@@ -610,3 +610,199 @@ According to `FRONTEND_TODO.md`, all Phase 2 Authentication items are **complete
 
 - **API client**
   - Public auth paths do not send JWT; 401 clears token and redirects to login only when not on a public path.
+
+---
+
+## Phase 3 – User Profile & Settings
+
+This section describes everything implemented in **Phase 3 (User Profile & Settings)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. User Profile Page
+
+- **File**
+  - `src/pages/ProfilePage.tsx`
+
+- **Route**
+  - `/profile` (protected).
+  - Linked visually from the Dashboard placeholder via a temporary button.
+
+- **UI**
+  - **Header:**
+    - User avatar (circle) with overlay "تغيير" on hover to upload a new image.
+    - User name and email display.
+  - **Form (Profile Info):**
+    - **Name:** Editable text input.
+    - **Email:** Read-only input (for display).
+    - **Button:** "حفظ التغييرات" to update profile info.
+  - **Security Section:**
+    - **Current Password:** Input for verifying identity.
+    - **New Password:** Input for the new password.
+    - **Button:** "تغيير كلمة المرور".
+
+- **Functionality**
+  - **Fetch Profile:** Loads user data (name, email, avatar) on mount via `userService.getProfile`.
+  - **Update Profile:** Updates user name via `userService.updateProfile`. Shows success alert on completion.
+  - **Upload Avatar:** Click on avatar -> Select file -> Uploads via `userService.uploadAvatar`. Reloads profile to show new image (optimistic update logic can be added later).
+  - **Change Password:** Calls `userService.changePassword`. Provides feedback on success or failure (especially validates current password logic via API error).
+
+- **State**
+  - Local state for form fields (`name`, `currentPassword`, `newPassword`) and UI feedback (`loading`, `error`, `passwordMessage`).
+
+---
+
+### 2. Settings Page
+
+- **File**
+  - `src/pages/SettingsPage.tsx`
+
+- **Route**
+  - `/settings` (protected).
+  - Linked visually from the Dashboard placeholder via a temporary button.
+
+- **UI**
+  - **Appearance:** 
+    - Toggle for "الوضع الليلي" (Dark Mode). Visual-only toggle for now (updates state/API but doesn't swap global theme yet).
+  - **Notifications:**
+    - Checkboxes for "إشعارات البريد الإلكتروني" (Email) and "إشعارات المتصفح" (Push).
+  - **Danger Zone:**
+    - Red-bordered section.
+    - Button "حذف الحساب" (Delete Account) with `confirm()` dialog.
+
+- **Functionality**
+  - **Preferences:** Toggles update local state optimistically and call `userService.updatePreferences`. Reverts on error.
+  - **Delete Account:** Confirms intent and triggers (mock) verification/deletion logic.
+
+---
+
+### 3. User Service (API Integration)
+
+- **File**
+  - `src/services/userService.ts`
+
+- **Purpose**
+  - Centralizes all user-related API calls. Uses `apiClient` (configured in Phase 1/2).
+
+- **Methods**
+  - `getProfile()`: `GET /users/me`. Returns `UserProfile` (id, name, email, avatarUrl). *Includes mock fallback.*
+  - `updateProfile(data)`: `PATCH /users/me`.
+  - `uploadAvatar(file)`: `POST /users/me/avatar`. Uses `FormData` for multipart upload.
+  - `changePassword(current, new)`: `POST /auth/change-password`.
+  - `updatePreferences(prefs)`: `PATCH /users/me/preferences`. *Includes fallback to minimal local behavior if API fails.*
+
+---
+
+### 4. Routing & Navigation
+
+- **App.tsx**
+  - Registered `/profile` and `/settings` routes wrapped in `<PrivateRoute>`.
+
+- **DashboardPage.tsx**
+  - Added "الملف الشخصي" and "الإعدادات" buttons to the placeholder content to facilitate testing/navigation until the Sidebar (Phase 4) is implemented.
+
+---
+
+### 5. Summary of Phase 3 status
+
+According to `FRONTEND_TODO.md`, all Phase 3 items are **completed**:
+
+- **User Profile Page & API**: Implemented logic to view/edit profile and upload avatar.
+- **Account Settings & API**: Implemented preferences management (theme, notifications) and password change.
+- **Settings Menu**: Accessible via Dashboard links (temporary placement until Sidebar).
+
+---
+
+## Phase 4 – Core Layout & Navigation
+
+This section describes everything implemented in **Phase 4 (Core Layout & Navigation)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. Main Layout & Application Shell
+
+- **File**
+  - `src/layouts/MainLayout.tsx`
+
+- **Purpose**
+  - Serves as the persistent shell for all authenticated pages (`/dashboard`, `/profile`, `/settings`).
+  - Replaces the temporary "Placeholder" dashboard structure.
+
+- **Structure**
+  - **Header**: Fixed at the top (sticky).
+  - **Sidebar**: Collapsible panel on the right (RTL).
+  - **Content Area**: Scrollable area (`<Outlet />`) taking up the remaining space.
+
+- **State**
+  - `isSidebarOpen`: Boolean state managing sidebar visibility.
+  - **Toggles**: Button in layout to open/close sidebar for full-screen focus.
+
+---
+
+### 2. Top Header
+
+- **File**
+  - `src/components/Header.tsx`
+
+- **UI Design**
+  - **Style**: Dark glassmorphism (`backdrop-blur-md`, `bg-slate-900/50`), sticky top.
+  - **Branding**: "Hayah" logo with blue-purple gradient text (`bg-linear-to-r`).
+  - **Navigation items**:
+    - **Workspace Switcher**: Dropdown (visual mock) to switch contexts.
+    - **Quick Links**: "Recent", "Starred", "Templates" buttons.
+    - **Create Button**: Primary action button ("جديد").
+  - **Search**: Centered visual search bar.
+  - **User Actions**:
+    - Notification Bell (with badge).
+    - Help Icon.
+    - **Avatar**: Circle with user initial/image.
+
+- **Interactivity**
+  - **Profile Dropdown**: Clicking the avatar opens a dropdown menu with:
+    - User details (Name/Email).
+    - Link to **Profile** (`/profile`).
+    - Link to **Settings** (`/settings`).
+    - **Logout**: Clears token and redirects to `/login`.
+
+---
+
+### 3. Sidebar & Navigation Tree
+
+- **Files**
+  - `src/components/Sidebar.tsx` (Container)
+  - `src/components/SidebarItem.tsx` (Recursive Item)
+  - `src/services/folderService.ts` (Data)
+
+- **UI Design**
+  - **Style**: Dark slate background, fixed width (`w-64`), border-left separator.
+  - **Sections**:
+    - **Quick Links**: Home, Inbox (with counter), Search.
+    - **Spaces**: The main hierarchy tree.
+    - **Bottom**: Archive, Trash.
+
+- **Recursive Hierarchy (ClickUp Style)**
+  - **Data Structure**: `NavigationItem` type (id, type: 'folder'|'list', name, children).
+  - **Service**: `folderService.getNavigationTree()` returns mock data simulating `Spaces -> Folders -> Lists`.
+  - **Rendering**: `SidebarItem` component recursively renders children if `item.type === 'folder'` and is open.
+  - **Indentation**: visual nesting via calculated padding/margin.
+  - **Interactions**:
+    - **Folders**: Toggle expand/collapse. Hover shows "Add (+)" and "Menu (...)" buttons.
+    - **Lists**: Navigate to list view (e.g. `/dashboard/list/:id`).
+
+- **Integration**
+  - The sidebar is responsive.
+  - Desktop: Can be toggled closed to maximize workspace (Full-screen mode).
+  - Mobile: (Planned overlay behavior/hidden by default).
+
+---
+
+### 4. Summary of Phase 4 status
+
+According to `FRONTEND_TODO.md`, all Phase 4 items are **completed**:
+
+- **Core Layout**: Implemented `MainLayout` shell structure.
+- **Top Header**: Implemented premium header with navigation and user dropdowns.
+- **Sidebar**: Implemented recursive folder/list tree structure with collapse logic.
+- **Integration**: All authenticated routes (`/dashboard`, etc.) now run inside this shell.
+
+
