@@ -2,15 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import type { DropResult } from '@hello-pangea/dnd';
 import { useFolderStore } from '../../store/useFolderStore';
+import { useListStore } from '../../store/useListStore';
 import { DraggableFolder } from './DraggableFolder';
 import type { NavigationItem } from '../../services/folderService';
 import { FolderContextMenu } from './FolderContextMenu';
+import { ListContextMenu } from './ListContextMenu';
 import { FolderModals } from './FolderModals';
+import { CreateListModal } from '../List/CreateListModal';
+import { ListSettingsModal } from '../List/ListSettingsModal';
 
 export function FolderTree() {
   const { tree, fetchTree, isLoading, addItem, updateItemName, deleteItem } = useFolderStore();
+  const { openCreateModal, openSettingsModal, duplicateList, archiveList } = useListStore();
 
-  // Local state for context menu and modals
+  // Local state for context menu and modals (folder only, lists utilize useListStore mostly)
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, item: NavigationItem } | null>(null);
   const [modalState, setModalState] = useState<{ type: 'create' | 'rename' | 'delete', item?: NavigationItem, parentId?: string | null } | null>(null);
 
@@ -21,19 +26,11 @@ export function FolderTree() {
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
 
-    // Dropped outside the list
-    if (!destination) {
-      return;
-    }
-
-    // No change in position
-    if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      return;
-    }
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
     // Placeholder for move logic
     console.log('Moved', draggableId, 'from', source, 'to', destination);
-    // TODO: Implement moveItem logic (recursive tree splicing)
   };
 
   const handleContextMenu = (e: React.MouseEvent, item: NavigationItem) => {
@@ -44,7 +41,7 @@ export function FolderTree() {
 
   const handleCreateClick = (e: React.MouseEvent, item: NavigationItem) => {
     e.stopPropagation();
-    setModalState({ type: 'create', parentId: item.id });
+    openCreateModal(item.id);
   };
 
   const closeContextMenu = () => setContextMenu(null);
@@ -80,14 +77,35 @@ export function FolderTree() {
       </DragDropContext>
 
       {contextMenu && (
-        <FolderContextMenu
-          {...contextMenu}
-          onClose={closeContextMenu}
-          onRename={() => { setModalState({ type: 'rename', item: contextMenu.item }); closeContextMenu(); }}
-          onDelete={() => { setModalState({ type: 'delete', item: contextMenu.item }); closeContextMenu(); }}
-          onCreateList={() => { setModalState({ type: 'create', parentId: contextMenu.item.id }); closeContextMenu(); }}
-        />
+        contextMenu.item.type === 'list' ? (
+          <ListContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            item={contextMenu.item}
+            onClose={closeContextMenu}
+            onRename={() => { setModalState({ type: 'rename', item: contextMenu.item }); closeContextMenu(); }}
+            onDelete={() => { setModalState({ type: 'delete', item: contextMenu.item }); closeContextMenu(); }}
+            onDuplicate={() => { duplicateList(contextMenu.item.id, false); closeContextMenu(); }}
+            onArchive={() => { archiveList(contextMenu.item.id, true); closeContextMenu(); }}
+            onSettings={() => { openSettingsModal(contextMenu.item.id); closeContextMenu(); }}
+            onSaveTemplate={() => { console.log('Save template not impl'); closeContextMenu(); }}
+          />
+        ) : (
+          <FolderContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            item={contextMenu.item}
+            onClose={closeContextMenu}
+            onRename={() => { setModalState({ type: 'rename', item: contextMenu.item }); closeContextMenu(); }}
+            onDelete={() => { setModalState({ type: 'delete', item: contextMenu.item }); closeContextMenu(); }}
+            onCreateList={() => { openCreateModal(contextMenu.item.id); closeContextMenu(); }}
+          />
+        )
       )}
+
+      {/* Modals */}
+      <CreateListModal />
+      <ListSettingsModal />
 
       {modalState && (
         <FolderModals

@@ -894,3 +894,144 @@ All Phase 5 items are **completed**:
 - **Folder Management**: Implemented Create, Rename, Delete modals and Context Menu.
 - **API Integration**: Implemented mock service (`folderService`) and store (`useFolderStore`) with optimistic updates.
 
+
+## Phase 6 – Lists Management
+
+This section describes everything implemented in **Phase 6 (Lists Management)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`.
+
+---
+
+### 1. Enhanced Data Model
+
+- **File**
+  - `src/services/folderService.ts`
+
+- **NavigationItem Extensions**
+  - Added list-specific properties to the `NavigationItem` interface:
+    - `description?: string` – Optional description for lists.
+    - `visibility?: 'private' | 'public' | 'workspace'` – Access control level.
+    - `isArchived?: boolean` – Archive status.
+    - `color?: string` – Hex color code for visual identification.
+
+- **Mock Data Updates**
+  - Updated `MOCK_TREE` to include examples of lists with different visibility levels, colors, and archived states.
+
+---
+
+### 2. List Service Layer
+
+- **File**
+  - `src/services/listService.ts`
+
+- **Purpose**
+  - Centralizes list-specific operations separate from folder hierarchy management.
+
+- **Data Types**
+  - `ListDetails` extends `NavigationItem` with additional metadata (`createdAt`, `updatedAt`, `ownerId`, `members`).
+
+- **Methods**
+  - `getListDetails(id)`: Fetches full list information.
+  - `updateList(id, updates)`: Updates list properties.
+  - `duplicateList(id, options)`: Creates a copy of a list with optional task inclusion.
+  - `archiveList(id, archive)`: Toggles archive status.
+  - `getTemplates()`: Returns available list templates.
+  - `createFromTemplate(templateIndex, name, parentId)`: Creates a list from a template.
+  - `saveAsTemplate(listId, name)`: Saves a list as a reusable template.
+
+- **Templates**
+  - Mock templates include: Kanban Board, Bug Tracking, Content Calendar.
+
+---
+
+### 3. List State Management
+
+- **File**
+  - `src/store/useListStore.ts`
+
+- **Store Structure**
+  - `activeListId`, `activeListDetails`: Currently selected list.
+  - `isLoading`: Loading state for async operations.
+  - Modal states: `isCreateModalOpen`, `isSettingsModalOpen`, `isTemplatesModalOpen`.
+  - Context: `contextParentId`, `contextListId` for modal operations.
+
+- **Actions**
+  - `setActiveList(id)`: Sets the active list and fetches details.
+  - `fetchListDetails(id)`: Loads full list information.
+  - Modal controls: `openCreateModal`, `closeCreateModal`, `openSettingsModal`, etc.
+  - Business logic: `createList`, `updateList`, `duplicateList`, `archiveList`.
+
+- **Integration**
+  - Refreshes `useFolderStore` tree after mutations to keep sidebar in sync.
+
+---
+
+### 4. UI Components
+
+#### 4.1 List Context Menu
+
+- **File**
+  - `src/components/Sidebar/ListContextMenu.tsx`
+
+- **Features**
+  - Dedicated context menu for list items with actions:
+    - Rename, Duplicate, Save as Template.
+    - Settings, Archive, Delete.
+  - Arabic labels with RTL layout.
+
+#### 4.2 Create List Modal
+
+- **File**
+  - `src/components/List/CreateListModal.tsx`
+
+- **Features**
+  - Name input field.
+  - Template selection toggle with expandable template picker.
+  - Templates displayed as selectable cards.
+  - Integrates with `useListStore` for creation logic.
+
+#### 4.3 List Settings Modal
+
+- **File**
+  - `src/components/List/ListSettingsModal.tsx`
+
+- **Features**
+  - **General Settings**:
+    - Name and description editors.
+    - Color picker with preset palette.
+    - Visibility selector (Private/Workspace/Public).
+  - Fetches list details on open via `useListStore`.
+  - Updates propagate to sidebar immediately.
+
+---
+
+### 5. Enhanced Sidebar Integration
+
+- **File**
+  - `src/components/Sidebar/DraggableFolder.tsx`
+
+- **Visual Enhancements**
+  - List icons display in their assigned color.
+  - Private lists show a lock icon indicator.
+  - Hover states reveal context menu trigger.
+
+- **File**
+  - `src/components/Sidebar/FolderTree.tsx`
+
+- **Context Menu Routing**
+  - Conditionally renders `ListContextMenu` for lists and `FolderContextMenu` for folders.
+  - Integrates all new modals (`CreateListModal`, `ListSettingsModal`).
+  - Wires up list-specific actions (duplicate, archive, settings).
+
+---
+
+### 6. Summary of Phase 6 Status
+
+All Phase 6 items are **completed**:
+
+- **List CRUD Operations**: Create, Update, Delete, Archive, Duplicate with UI and service integration.
+- **List Context Menu**: Implemented with list-specific actions.
+- **List Settings**: Full settings modal with name, description, color, and visibility controls.
+- **List Templates**: Template selection in create flow with mock template data.
+- **API Integration**: Mock service layer (`listService`) with optimistic updates and cache invalidation.
+
+---

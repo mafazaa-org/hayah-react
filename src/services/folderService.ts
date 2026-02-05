@@ -4,6 +4,12 @@ export interface NavigationItem {
   name: string;
   children?: NavigationItem[];
   isOpen?: boolean;
+
+  // List specific properties
+  description?: string;
+  visibility?: 'private' | 'public' | 'workspace';
+  isArchived?: boolean;
+  color?: string; // hex code
 }
 
 const MOCK_TREE: NavigationItem[] = [
@@ -17,9 +23,26 @@ const MOCK_TREE: NavigationItem[] = [
         type: 'folder',
         name: 'الواجهة الأمامية (Frontend)',
         children: [
-          { id: 'list-1', type: 'list', name: 'مهام المرحلة 1' },
-          { id: 'list-2', type: 'list', name: 'مهام المرحلة 2' },
-          { id: 'list-3', type: 'list', name: 'تحسينات UI/UX' },
+          {
+            id: 'list-1',
+            type: 'list',
+            name: 'مهام المرحلة 1',
+            visibility: 'workspace',
+            color: '#3b82f6'
+          },
+          {
+            id: 'list-2',
+            type: 'list',
+            name: 'مهام المرحلة 2',
+            visibility: 'private',
+            color: '#ef4444'
+          },
+          {
+            id: 'list-3',
+            type: 'list',
+            name: 'تحسينات UI/UX',
+            isArchived: false
+          },
         ],
         isOpen: true // Initially open for demo
       },
@@ -28,7 +51,7 @@ const MOCK_TREE: NavigationItem[] = [
         type: 'folder',
         name: 'الخلفية (Backend)',
         children: [
-          { id: 'list-4', type: 'list', name: 'API Endpoints' },
+          { id: 'list-4', type: 'list', name: 'API Endpoints', visibility: 'workspace' },
           { id: 'list-5', type: 'list', name: 'Database Schema' },
         ]
       }
@@ -40,14 +63,17 @@ const MOCK_TREE: NavigationItem[] = [
     type: 'folder',
     name: 'التسويق (Marketing)',
     children: [
-      { id: 'list-6', type: 'list', name: 'حملة إطلاق' },
+      { id: 'list-6', type: 'list', name: 'حملة إطلاق', visibility: 'public' },
       { id: 'list-7', type: 'list', name: 'محتوى السوشيال ميديا' },
     ]
   },
   {
     id: 'list-standalone',
     type: 'list',
-    name: 'قائمة مهام عامة'
+    name: 'قائمة مهام عامة',
+    description: 'General tasks that do not belong to a specific project',
+    visibility: 'private',
+    isArchived: true
   }
 ];
 
