@@ -1,21 +1,10 @@
-import { useEffect, useState } from 'react';
 import { Home, Inbox, Search, Plus, Archive, Trash2 } from 'lucide-react';
-import { folderService } from '../services/folderService';
-import type { NavigationItem } from '../services/folderService'
-import { SidebarItem } from './SidebarItem';
+import { FolderTree } from './Sidebar/FolderTree';
 import { useNavigate } from 'react-router-dom';
 
 export function Sidebar({ isOpen, onToggle }: { isOpen: boolean, onToggle: () => void }) {
-  const [tree, setTree] = useState<NavigationItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    folderService.getNavigationTree().then(data => {
-      setTree(data);
-      setLoading(false);
-    });
-  }, []);
 
   return (
     <>
@@ -72,15 +61,7 @@ export function Sidebar({ isOpen, onToggle }: { isOpen: boolean, onToggle: () =>
             </button>
           </div>
 
-          {loading ? (
-            <div className="p-4 text-sm text-slate-500 text-center">جاري التحميل...</div>
-          ) : (
-            <div className="pb-4">
-              {tree.map(item => (
-                <SidebarItem key={item.id} item={item} />
-              ))}
-            </div>
-          )}
+          <FolderTree />
         </div>
 
         {/* Bottom Actions */}

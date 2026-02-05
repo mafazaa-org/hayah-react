@@ -806,3 +806,91 @@ According to `FRONTEND_TODO.md`, all Phase 4 items are **completed**:
 - **Integration**: All authenticated routes (`/dashboard`, etc.) now run inside this shell.
 
 
+
+## Phase 5 – Folders & Hierarchy System
+
+This section describes everything implemented in **Phase 5 (Folders & Hierarchy System)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`.
+
+---
+
+### 1. Folder & List Components
+
+- **Files**
+  - `src/components/Sidebar/DraggableFolder.tsx`
+  - `src/components/Sidebar/FolderTree.tsx`
+  - `src/components/Sidebar/FolderContextMenu.tsx`
+  - `src/components/Sidebar/FolderModals.tsx`
+
+- **UI Design**
+  - **Draggable Items**: Folders and lists are rendered as draggable items using `@hello-pangea/dnd`.
+  - **Expand/Collapse**: Folders have a caret icon to toggle visibility of nested children.
+  - **Visual Hierarchy**: Indentation is dynamically calculated based on depth.
+  - **Context Menus**:
+    - **Folders**: Create List/Folder, Rename, Delete.
+    - **Lists**: Rename, Duplicate, Archive, Settings, Delete.
+
+- **Functionality**
+  - **Drag and Drop**: Items can be reordered within the same parent (visual logic implemented; recursive tree splicing data logic is prepared as TODO).
+  - **Persisted State**: `isOpen` state for folders is managed via `useFolderStore`.
+
+---
+
+### 2. Folder Management (Modals)
+
+- **File**
+  - `src/components/Sidebar/FolderModals.tsx`
+
+- **Features**
+  - **Create Modal**: Allows creating a new "Folder" or "List" within a parent folder.
+  - **Rename Modal**: Updates the name of the selected item.
+  - **Delete Modal**: Confirmation dialog before removing an item (and its children).
+
+- **Implementation**
+  - Uses a shared modal component controlled by `FolderTree` state.
+  - Integrates with `useFolderStore` to dispatch actions.
+
+---
+
+### 3. State Management (Zustand)
+
+- **File**
+  - `src/store/useFolderStore.ts`
+
+- **Store Structure**
+  - `tree`: Array of `NavigationItem` representing the entire workspace hierarchy.
+  - `isLoading`, `error`: UI states.
+
+- **Actions**
+  - `fetchTree()`: Loads initial mock data.
+  - `addItem(parentId, type, name)`: Adds new node to the tree recursively.
+  - `updateItemName(id, name)`: Updates node name.
+  - `deleteItem(id)`: Removes node using recursive filter.
+  - `toggleFolder(id, isOpen)`: Updates open state (effectively persisting expansion).
+
+---
+
+### 4. Data Layer (Mock Service)
+
+- **File**
+  - `src/services/folderService.ts`
+
+- **Data Model**
+  - `NavigationItem`:
+    - `id`, `type` ('folder' | 'list'), `name`.
+    - `children`: Recursive array (for folders).
+    - `isOpen`: For folder expansion state.
+    - **New Properties**: `color`, `visibility` ('private' | 'public'), `isArchived`.
+
+- **Methods**
+  - `createItem`, `updateItem`, `deleteItem`, `moveItem`: Async methods with simulated delay to mock backend interactions.
+
+---
+
+### 5. Summary of Phase 5 status
+
+All Phase 5 items are **completed**:
+
+- **Folder Component**: Implemented nested display, expand/collapse, and drag-and-drop UI.
+- **Folder Management**: Implemented Create, Rename, Delete modals and Context Menu.
+- **API Integration**: Implemented mock service (`folderService`) and store (`useFolderStore`) with optimistic updates.
+
