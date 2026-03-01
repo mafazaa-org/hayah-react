@@ -121,12 +121,45 @@ export interface TaskActivity {
   timestamp: string;
 }
 
+// --- Phase 9: Comments & Collaboration Types ---
+
+export interface CommentAttachment {
+  id: string;
+  name: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string;
+}
+
+export interface CommentReaction {
+  emoji: string;
+  userId: string;
+  userName: string;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatarUrl?: string;
+  content: string;
+  mentionedUsers: string[]; // user IDs
+  attachments: CommentAttachment[];
+  reactions: CommentReaction[];
+  createdAt: string;
+  updatedAt: string;
+  isEdited: boolean;
+}
+
 export interface TaskDetail extends Task {
   subtasks: Subtask[];
   checklists: Checklist[];
   taskDependencies: TaskDependency[];
   attachments: TaskAttachment[];
   activity: TaskActivity[];
+  comments: TaskComment[];
 }
 
 // Column/Status type definitions

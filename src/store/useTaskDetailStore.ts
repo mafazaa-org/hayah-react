@@ -3,9 +3,11 @@ import type {
   TaskDetail,
   Subtask,
   DependencyType,
+  CommentAttachment,
   Task,
 } from '../types/task';
 import { taskDetailService } from '../services/taskDetailService';
+import { commentService } from '../services/commentService';
 
 export type DetailTab =
   | 'details'
@@ -13,7 +15,8 @@ export type DetailTab =
   | 'checklists'
   | 'dependencies'
   | 'attachments'
-  | 'activity';
+  | 'activity'
+  | 'comments';
 
 interface TaskDetailState {
   // Core
@@ -58,6 +61,17 @@ interface TaskDetailState {
   loadActivity: (page?: number) => Promise<void>;
   activityPage: number;
   activityTotal: number;
+
+  // Actions — comments
+  loadComments: (page?: number) => Promise<void>;
+  addComment: (content: string, mentionedUsers?: string[], attachments?: CommentAttachment[]) => Promise<void>;
+  editComment: (commentId: string, content: string, mentionedUsers?: string[]) => Promise<void>;
+  deleteComment: (commentId: string) => Promise<void>;
+  toggleReaction: (commentId: string, emoji: string) => Promise<void>;
+  uploadCommentAttachment: (file: File) => Promise<CommentAttachment | undefined>;
+  deleteCommentAttachment: (commentId: string, attachmentId: string) => Promise<void>;
+  commentPage: number;
+  commentTotal: number;
 }
 
 export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
@@ -69,6 +83,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
   activeTab: 'details',
   activityPage: 1,
   activityTotal: 0,
+  commentPage: 1,
+  commentTotal: 0,
 
   // ─── Modal ────────────────────────────────────────────────────
   async openTaskDetail(taskId: string, task?: Task) {
@@ -76,8 +92,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
     try {
       const detail = await taskDetailService.getTaskDetail(taskId, task);
       set({ selectedTask: detail, isLoading: false });
-    } catch (e: any) {
-      set({ error: e.message || 'خطأ في تحميل تفاصيل المهمة', isLoading: false });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message || 'خطأ في تحميل تفاصيل المهمة', isLoading: false });
     }
   },
 
@@ -113,8 +129,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
       set({
         selectedTask: { ...selectedTask, isArchived: true, updatedAt: new Date().toISOString() },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -130,8 +146,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           subtasks: [...selectedTask.subtasks, subtask],
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -148,8 +164,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           ),
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -225,8 +241,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           checklists: [...selectedTask.checklists, checklist],
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -247,8 +263,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           ),
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -318,8 +334,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           ),
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -340,8 +356,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           taskDependencies: [...selectedTask.taskDependencies, dep],
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -373,8 +389,8 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           attachments: [...selectedTask.attachments, attachment],
         },
       });
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
     }
   },
 
@@ -416,8 +432,139 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
           activityTotal: total,
         });
       }
-    } catch (e: any) {
-      set({ error: e.message });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  // ─── Comments ──────────────────────────────────────────────────
+  async loadComments(page = 1) {
+    const { selectedTask } = get();
+    if (!selectedTask) return;
+    try {
+      const { items, total } = await commentService.getComments(selectedTask.id, page);
+      if (page === 1) {
+        set({
+          selectedTask: { ...selectedTask, comments: items },
+          commentPage: 1,
+          commentTotal: total,
+        });
+      } else {
+        set({
+          selectedTask: {
+            ...selectedTask,
+            comments: [...selectedTask.comments, ...items],
+          },
+          commentPage: page,
+          commentTotal: total,
+        });
+      }
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  async addComment(content: string, mentionedUsers: string[] = [], attachments: CommentAttachment[] = []) {
+    const { selectedTask } = get();
+    if (!selectedTask) return;
+    try {
+      const comment = await commentService.createComment(selectedTask.id, content, mentionedUsers, attachments);
+      set({
+        selectedTask: {
+          ...selectedTask,
+          comments: [comment, ...selectedTask.comments],
+        },
+        commentTotal: get().commentTotal + 1,
+      });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  async editComment(commentId: string, content: string, mentionedUsers: string[] = []) {
+    const { selectedTask } = get();
+    if (!selectedTask) return;
+    try {
+      const updated = await commentService.updateComment(selectedTask.id, commentId, content, mentionedUsers);
+      set({
+        selectedTask: {
+          ...selectedTask,
+          comments: selectedTask.comments.map((c) =>
+            c.id === commentId ? updated : c
+          ),
+        },
+      });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  async deleteComment(commentId: string) {
+    const { selectedTask } = get();
+    if (!selectedTask) return;
+    // Optimistic
+    const prev = selectedTask.comments;
+    set({
+      selectedTask: {
+        ...selectedTask,
+        comments: selectedTask.comments.filter((c) => c.id !== commentId),
+      },
+      commentTotal: Math.max(0, get().commentTotal - 1),
+    });
+    try {
+      await commentService.deleteComment(selectedTask.id, commentId);
+    } catch {
+      set({ selectedTask: { ...selectedTask, comments: prev } });
+    }
+  },
+
+  async toggleReaction(commentId: string, emoji: string) {
+    const { selectedTask } = get();
+    if (!selectedTask) return;
+    try {
+      const reactions = await commentService.addReaction(selectedTask.id, commentId, emoji);
+      set({
+        selectedTask: {
+          ...selectedTask,
+          comments: selectedTask.comments.map((c) =>
+            c.id === commentId ? { ...c, reactions } : c
+          ),
+        },
+      });
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  async uploadCommentAttachment(file: File): Promise<CommentAttachment | undefined> {
+    const { selectedTask } = get();
+    if (!selectedTask) return undefined;
+    try {
+      return await commentService.uploadCommentAttachment(selectedTask.id, file);
+    } catch (e: unknown) {
+      set({ error: (e as Error).message });
+      return undefined;
+    }
+  },
+
+  async deleteCommentAttachment(commentId: string, attachmentId: string) {
+    const { selectedTask } = get();
+    if (!selectedTask) return;
+    // Optimistic
+    set({
+      selectedTask: {
+        ...selectedTask,
+        comments: selectedTask.comments.map((c) =>
+          c.id === commentId
+            ? { ...c, attachments: c.attachments.filter((a) => a.id !== attachmentId) }
+            : c
+        ),
+      },
+    });
+    try {
+      await commentService.deleteCommentAttachment(selectedTask.id, commentId, attachmentId);
+    } catch {
+      set({ selectedTask });
     }
   },
 }));

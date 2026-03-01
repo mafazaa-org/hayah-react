@@ -1513,4 +1513,104 @@ According to `FRONTEND_TODO.md`, all Phase 8 Task Management (Detail View) items
 - **Task Activity/History**: Timeline-styled feed with per-type icons, old/new value diffs, paginated loading.
 - **Task Activity API Integration**: Paginated mock service with store integration.
 
+
 ---
+
+## Phase 9 – Comments & Collaboration
+
+This section describes everything implemented in **Phase 9 (Comments & Collaboration)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. Type Layer Extensions
+
+- **File**: `src/types/task.ts`
+- **New Interfaces**:
+  - `CommentAttachment` – `id`, `name`, `url`, `mimeType`, `size`, `uploadedAt`.
+  - `CommentReaction` – `emoji`, `userId`, `userName`.
+  - `TaskComment` – `id`, `taskId`, `authorId`, `authorName`, `authorAvatarUrl?`, `content`, `mentionedUsers`, `attachments`, `reactions`, `createdAt`, `updatedAt`, `isEdited`.
+  - `TaskDetail` – Extended to include `comments: TaskComment[]`.
+
+---
+
+### 2. Mock API Service Layer
+
+- **File**: `src/services/commentService.ts`
+- **Purpose**: Provides a full mock backend for comment operations, with simulated network latency and mock data.
+- **Methods**:
+  - `getComments(taskId, page, pageSize)` – Paginated retrieval of comments, returning newest first.
+  - `createComment(taskId, content, mentionedUsers, attachments)` – Creates a comment and adds it to the mock store.
+  - `updateComment(taskId, commentId, content, mentionedUsers)` – Marks a comment as edited and saves the new content.
+  - `deleteComment(taskId, commentId)` – Removes a comment from the list.
+  - `addReaction(taskId, commentId, emoji)` / `removeReaction` – Toggles reactions on a specific comment.
+  - `uploadCommentAttachment(taskId, file)` – Creates a blob URL object for uploaded files.
+  - `deleteCommentAttachment(taskId, commentId, attachmentId)` – Removes a file from a comment.
+  - `searchUsers(query)` – A mock `@mention` user search function that filters a static list of users.
+
+---
+
+### 3. State Management (Zustand Store)
+
+- **File**: `src/store/useTaskDetailStore.ts`
+- **Updates**:
+  - Added `'comments'` to the `DetailTab` union type.
+  - Added state for pagination: `commentPage`, `commentTotal`.
+  - **Actions**:
+    - `loadComments(page)`: Retrieves paginated comments from the service. Page 1 replaces state, subsequent pages append.
+    - `addComment`: Appends a new comment to the top of the array (optimistic).
+    - `editComment`: Finds and replaces the updated comment in state.
+    - `deleteComment`: Optimistically removes the comment, rolls back on error.
+    - `toggleReaction`: Updates the reaction list optimistically.
+    - `uploadCommentAttachment`: Helper to upload before submitting the comment.
+    - `deleteCommentAttachment`: Optimistic attachment removal.
+
+---
+
+### 4. UI Components
+
+#### 4.1 Comment Composer
+- **File**: `src/components/Task/CommentComposer.tsx`
+- **Features**:
+  - **Rich Textarea**: Auto-resizing textarea.
+  - **@ Mentions**: Typing `@` triggers a popover menu querying `commentService.searchUsers`. Selected users are converted into highlighted text inline and tracked using their user IDs.
+  - **File Attachments**: Users can upload multiple files using the native file picker. Previews appear as thumbnails (for images) or generic file icons above the input.
+  - **Keyboard Navigation**: Arrow keys navigate the mention list, Enter selects. `Cmd+Enter` (or `Ctrl+Enter`) submits the comment.
+
+#### 4.2 Comment Item
+- **File**: `src/components/Task/CommentItem.tsx`
+- **Features**:
+  - **Author Avatar & Metadata**: Displays initials via a gradient circle or a profile image, along with Arabic formatted timestamps.
+  - **Mention Highlighting**: Text fragments matching `@Username` are styled distinctly (sky blue with background).
+  - **Inline Editing**: Allows comment authors to edit their content directly within the component space. Escape cancels, Enter saves.
+  - **Action Menu**: Authors see an ellipses menu with Options -> Edit, Delete.
+  - **Reactions**: Users can add predefined emojis (👍, 🎉, ❤️, 🚀, 👀, 🙏) via a reaction popover. Existing reactions show up as interactive pill buttons indicating the user count.
+  - **Attachment Preview**: Image previews and standard file links with a direct download action. Authors can delete uploaded files.
+
+#### 4.3 Comment Section Container
+- **File**: `src/components/Task/CommentSection.tsx`
+- **Features**:
+  - **Component Orchestration**: Brings together `CommentComposer` and lists multiple `CommentItem` components.
+  - **Layout**: Renders the composer pinned to the bottom, and comments stacked above it.
+  - **Pagination**: Features an "Load older comments" (`عرض التعليقات الأقدم`) button that triggers `loadComments` with the next page number.
+  - **Empty States**: Friendly empty state with icon when a task lacks comments.
+
+---
+
+### 5. Integration
+
+#### 5.1 Task Detail Modal
+- **File**: `src/components/Task/TaskDetailModal.tsx`
+- **Changes**:
+  - Added the 'comments' (`التعليقات`) tab to the main navigation, using the `MessageSquare` icon.
+  - Added a count badge dynamically reflecting `selectedTask.comments.length`.
+  - Rendered `CommentSection` conditionally when the `activeTab === 'comments'`.
+
+---
+
+### 6. Summary of Phase 9 Status
+
+According to `FRONTEND_TODO.md`, all Phase 9 features are **completed**:
+- **Comments System**: Displays comments, allows adding, editing, and deleting by author. Handles timestamps and avatars.
+- **Collaboration Elements**: Complete with `@mention` autocomplete tracking and comment reactions with real counts.
+- **Comment Attachments**: Provides upload progress simulation, display thumbnails, and deletion mechanisms.
+- **Service Integration**: Services and Action dispatches implemented with loading, error states, and optimistic UI updates for real-time emulation.

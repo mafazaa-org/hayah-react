@@ -1,0 +1,28 @@
+
+D:\Visual-Studio-Code-Projects\Hayah\frontend\src\components\Task\CommentComposer.tsx
+    3:39  error  'ImageIcon' is defined but never used              @typescript-eslint/no-unused-vars
+   19:10  error  'mentionQuery' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  136:13  error  'user' is assigned a value but never used          @typescript-eslint/no-unused-vars
+
+D:\Visual-Studio-Code-Projects\Hayah\frontend\src\components\Task\CommentSection.tsx
+  15:6  warning  React Hook useEffect has missing dependencies: 'loadComments' and 'selectedTask?.comments.length'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\Visual-Studio-Code-Projects\Hayah\frontend\src\store\useTaskDetailStore.ts
+   95:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  149:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  167:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  244:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  266:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  337:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  359:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  392:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  435:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  462:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  479:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  497:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  534:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  544:17  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 19 problems (18 errors, 1 warning)
+

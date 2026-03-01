@@ -10,6 +10,7 @@ import { DependencySection } from './DependencySection';
 import { CustomFieldsSection } from './CustomFieldsSection';
 import { AttachmentSection } from './AttachmentSection';
 import { ActivityFeed } from './ActivityFeed';
+import { CommentSection } from './CommentSection';
 import {
   X,
   FileText,
@@ -19,6 +20,7 @@ import {
   Settings2,
   Paperclip,
   Clock,
+  MessageSquare,
   Loader2,
 } from 'lucide-react';
 
@@ -28,6 +30,7 @@ const TABS: { id: DetailTab; label: string; icon: React.ReactNode }[] = [
   { id: 'checklists', label: 'قوائم التحقق', icon: <CheckSquare size={14} /> },
   { id: 'dependencies', label: 'التبعيات', icon: <Link2 size={14} /> },
   { id: 'attachments', label: 'المرفقات', icon: <Paperclip size={14} /> },
+  { id: 'comments', label: 'التعليقات', icon: <MessageSquare size={14} /> },
   { id: 'activity', label: 'السجل', icon: <Clock size={14} /> },
 ];
 
@@ -109,8 +112,8 @@ export function TaskDetailModal() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-t-lg transition-colors whitespace-nowrap ${activeTab === tab.id
-                      ? 'bg-slate-800 text-sky-400 border-b-2 border-sky-400'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    ? 'bg-slate-800 text-sky-400 border-b-2 border-sky-400'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
                     }`}
                 >
                   {tab.icon}
@@ -124,6 +127,11 @@ export function TaskDetailModal() {
                   {tab.id === 'attachments' && selectedTask.attachments.length > 0 && (
                     <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-700 text-slate-300">
                       {selectedTask.attachments.length}
+                    </span>
+                  )}
+                  {tab.id === 'comments' && selectedTask.comments.length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-slate-700 text-slate-300">
+                      {selectedTask.comments.length}
                     </span>
                   )}
                 </button>
@@ -157,6 +165,7 @@ export function TaskDetailModal() {
                     {activeTab === 'checklists' && <ChecklistSection />}
                     {activeTab === 'dependencies' && <DependencySection />}
                     {activeTab === 'attachments' && <AttachmentSection />}
+                    {activeTab === 'comments' && <CommentSection />}
                     {activeTab === 'activity' && <ActivityFeed />}
                   </div>
                 </div>

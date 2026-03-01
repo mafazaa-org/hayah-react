@@ -44,6 +44,7 @@ function ensureDetail(taskId: string): TaskDetail {
           timestamp: new Date().toISOString(),
         },
       ],
+      comments: [],
     };
     detailStore.set(taskId, base);
   }
