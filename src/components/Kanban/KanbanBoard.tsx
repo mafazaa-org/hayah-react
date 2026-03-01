@@ -5,6 +5,7 @@ import { useTaskStore } from '../../store/useTaskStore';
 import { useViewStore } from '../../store/useViewStore';
 import { KanbanColumn } from './KanbanColumn';
 import { BoardToolbar } from './BoardToolbar';
+import { TaskDetailModal } from '../Task/TaskDetailModal';
 import type { Task } from '../../types/task';
 
 interface KanbanBoardProps {
@@ -69,7 +70,7 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
     if (filters.assignees.length > 0) count++;
     if (filters.hasAssignee !== null) count++;
     if (filters.dueDateRange !== null) count++;
-     // Count custom-field conditions as a single active filter group
+    // Count custom-field conditions as a single active filter group
     if (filters.customFields.length > 0) count++;
     return count;
   }, [filters]);
@@ -229,6 +230,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
           )}
         </Droppable>
       </DragDropContext>
+
+      {/* Task Detail Modal */}
+      <TaskDetailModal />
     </div>
   );
 }

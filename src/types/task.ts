@@ -45,6 +45,88 @@ export interface Task {
   startDate?: string; // Phase 7: Timeline View
   dependencies?: string[]; // List of task IDs that this task depends on
   order: number; // Position within column
+  isArchived?: boolean;
+}
+
+// --- Phase 8: Detail View Types ---
+
+export interface Subtask {
+  id: string;
+  taskId: string;
+  title: string;
+  completed: boolean;
+  order: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  checklistId: string;
+  title: string;
+  completed: boolean;
+  order: number;
+}
+
+export interface Checklist {
+  id: string;
+  taskId: string;
+  title: string;
+  items: ChecklistItem[];
+}
+
+export type DependencyType = 'blocks' | 'blocked_by';
+
+export interface TaskDependency {
+  id: string;
+  type: DependencyType;
+  sourceTaskId: string;
+  targetTaskId: string;
+  targetTaskTitle?: string; // for display purposes
+}
+
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  name: string;
+  size: number; // bytes
+  mimeType: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+export type ActivityType =
+  | 'created'
+  | 'status_change'
+  | 'priority_change'
+  | 'assignee_change'
+  | 'title_change'
+  | 'description_change'
+  | 'due_date_change'
+  | 'tag_change'
+  | 'subtask_change'
+  | 'checklist_change'
+  | 'dependency_change'
+  | 'attachment_change'
+  | 'archived'
+  | 'unarchived';
+
+export interface TaskActivity {
+  id: string;
+  taskId: string;
+  type: ActivityType;
+  actor: string;
+  description: string;
+  oldValue?: string;
+  newValue?: string;
+  timestamp: string;
+}
+
+export interface TaskDetail extends Task {
+  subtasks: Subtask[];
+  checklists: Checklist[];
+  taskDependencies: TaskDependency[];
+  attachments: TaskAttachment[];
+  activity: TaskActivity[];
 }
 
 // Column/Status type definitions

@@ -1155,3 +1155,362 @@ According to `FRONTEND_TODO.md`, all Phase 7 Lists & Board Views items have been
 - **Timeline View**: Assembled scalable chronologies charting visual intervals alongside distinct dependency connections securely scaling specific dynamic queries appropriately.
 
 ---
+
+## Phase 8 – Task Management (Detail View)
+
+This section describes everything implemented in **Phase 8 (Task Management – Detail View)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. Type Layer Extensions
+
+- **File**
+  - `src/types/task.ts`
+
+- **New Interfaces**
+  - `Subtask` – `id`, `title`, `completed`, `order`, `assigneeId?`, `createdAt`.
+  - `ChecklistItem` – `id`, `title`, `completed`, `order`.
+  - `Checklist` – `id`, `title`, `items: ChecklistItem[]`.
+  - `TaskDependency` – `id`, `sourceTaskId`, `targetTaskId`, `targetTaskTitle?`, `type: DependencyType`, `createdAt`.
+  - `DependencyType` – `'blocks' | 'blocked_by'`.
+  - `TaskAttachment` – `id`, `name`, `url`, `mimeType`, `size`, `uploadedBy`, `uploadedAt`.
+  - `TaskActivity` – `id`, `taskId`, `type: ActivityType`, `actor`, `description`, `oldValue?`, `newValue?`, `timestamp`.
+  - `ActivityType` – Union type covering all trackable changes: `'created'`, `'status_change'`, `'priority_change'`, `'assignee_change'`, `'title_change'`, `'description_change'`, `'due_date_change'`, `'tag_change'`, `'subtask_change'`, `'checklist_change'`, `'dependency_change'`, `'attachment_change'`, `'archived'`, `'unarchived'`.
+  - `TaskDetail` – Extends `Task` with: `subtasks`, `checklists`, `taskDependencies`, `attachments`, `activity`, `customFields`, `iterationName?`.
+
+- **Base `Task` modifications**
+  - Added `isArchived?: boolean` field to support task archiving.
+
+---
+
+### 2. Mock API Service Layer
+
+- **File**
+  - `src/services/taskDetailService.ts`
+
+- **Purpose**
+  - Provides a complete mock backend for all Phase 8 detail operations, following the pattern established by `taskService.ts`.
+
+- **In-memory stores**
+  - `subtasksStore: Map<string, Subtask[]>` – Per-task subtasks.
+  - `checklistsStore: Map<string, Checklist[]>` – Per-task checklists.
+  - `dependenciesStore: Map<string, TaskDependency[]>` – Per-task dependencies.
+  - `attachmentsStore: Map<string, TaskAttachment[]>` – Per-task attachments.
+  - `activityStore: Map<string, TaskActivity[]>` – Per-task activity logs.
+
+- **Methods**
+  - **Task Detail:** `getTaskDetail(taskId, task?)` – Assembles a full `TaskDetail` from all stores with seed mock data for new tasks.
+  - **Updates:** `updateTask(taskId, updates)`, `archiveTask(taskId)`.
+  - **Subtasks:** `createSubtask`, `updateSubtask`, `deleteSubtask`, `toggleSubtask`, `reorderSubtasks`.
+  - **Checklists:** `createChecklist`, `addChecklistItem`, `updateChecklistItem`, `deleteChecklistItem`, `toggleChecklistItem`.
+  - **Dependencies:** `createDependency` (with circular dependency detection), `deleteDependency`.
+  - **Attachments:** `uploadAttachment(taskId, file)`, `deleteAttachment`.
+  - **Activity:** `getActivity(taskId, page, pageSize)` – Paginated activity feed (returns `{ items, total }`), `addActivity`.
+
+- **Design notes**
+  - All methods use `await delay(…)` to simulate network latency.
+  - IDs are generated with `crypto.randomUUID()`.
+  - Error handling throws descriptive Arabic messages.
+
+---
+
+### 3. State Management (Zustand Store)
+
+- **File**
+  - `src/store/useTaskDetailStore.ts`
+
+- **Exported type**
+  - `DetailTab = 'details' | 'subtasks' | 'checklists' | 'dependencies' | 'attachments' | 'activity'`
+
+- **State shape**
+  - `selectedTask: TaskDetail | null` – Currently viewed task's full detail.
+  - `isDetailModalOpen: boolean` – Whether the modal is visible.
+  - `isLoading: boolean` – Loading indicator during initial fetch.
+  - `error: string | null` – Error message for display.
+  - `activeTab: DetailTab` – Currently selected tab.
+  - `activityPage: number`, `activityTotal: number` – Activity pagination state.
+
+- **Actions — Modal**
+  - `openTaskDetail(taskId, task?)`: Sets loading state, opens modal, resets to `'details'` tab, fetches full task detail from service.
+  - `closeTaskDetail()`: Resets all modal state.
+  - `setActiveTab(tab)`: Switches the active tab.
+
+- **Actions — Task Fields**
+  - `updateTaskField(updates)`: **Optimistic update** — applies changes immediately, calls service, rolls back on failure.
+  - `archiveTask()`: Archives the task via service, updates local state.
+
+- **Actions — Subtasks**
+  - `addSubtask(title)`: Creates subtask via service, appends to local array.
+  - `editSubtask(subtaskId, title)`: Updates title via service, maps over local array.
+  - `deleteSubtask(subtaskId)`: **Optimistic** — removes locally, calls service, rolls back on failure.
+  - `toggleSubtask(subtaskId)`: **Optimistic** — toggles `completed`, rolls back on failure.
+  - `reorderSubtasks(orderedIds)`: **Optimistic** — reorders locally by ID array, calls service.
+
+- **Actions — Checklists**
+  - `addChecklist(title)`: Creates checklist via service, appends locally.
+  - `addChecklistItem(checklistId, title)`: Adds item to specific checklist.
+  - `toggleChecklistItem(checklistId, itemId)`: **Optimistic** toggle.
+  - `deleteChecklistItem(checklistId, itemId)`: **Optimistic** delete.
+  - `updateChecklistItem(checklistId, itemId, title)`: Updates item title.
+
+- **Actions — Dependencies**
+  - `addDependency(targetTaskId, type, targetTitle?)`: Creates dependency via service (includes circular detection).
+  - `removeDependency(dependencyId)`: **Optimistic** removal.
+
+- **Actions — Attachments**
+  - `uploadAttachment(file)`: Uploads via service, appends to local array.
+  - `removeAttachment(attachmentId)`: **Optimistic** removal.
+
+- **Actions — Activity**
+  - `loadActivity(page)`: Fetches paginated activity. Page 1 replaces; subsequent pages append.
+
+---
+
+### 4. UI Components
+
+#### 4.1 Task Detail Modal (Shell)
+
+- **File**
+  - `src/components/Task/TaskDetailModal.tsx`
+
+- **UI Design**
+  - **Overlay**: Fixed full-screen backdrop (`bg-black/60 backdrop-blur-sm`) with click-outside-to-close.
+  - **Modal container**: `max-w-5xl`, `rounded-2xl`, dark slate card with border and shadow.
+  - **Header bar**: Title «تفاصيل المهمة» and close button (`X` icon).
+  - **Tab bar**: Horizontal scrollable tabs for: التفاصيل (Details), المهام الفرعية (Subtasks), قوائم التحقق (Checklists), التبعيات (Dependencies), المرفقات (Attachments), السجل (Activity).
+    - Active tab styled with `border-b-2 border-sky-400` and `text-sky-400`.
+    - Badge counts shown for Subtasks and Attachments tabs.
+  - **Two-column layout**: Main content area (flexible) + sidebar (`lg:w-64`).
+  - **Loading state**: Centered `Loader2` spinner.
+  - **Error state**: Red error message display.
+  - **Keyboard**: `Escape` key closes the modal.
+  - **Body scroll lock**: `document.body.style.overflow = 'hidden'` when open.
+
+- **Tab routing**
+  - `details` → `TaskDescription` + `CustomFieldsSection`.
+  - `subtasks` → `SubtaskList`.
+  - `checklists` → `ChecklistSection`.
+  - `dependencies` → `DependencySection`.
+  - `attachments` → `AttachmentSection`.
+  - `activity` → `ActivityFeed`.
+  - `TaskHeader` and `TaskSidebar` are always visible regardless of active tab.
+
+---
+
+#### 4.2 Task Header
+
+- **File**
+  - `src/components/Task/TaskHeader.tsx`
+
+- **Features**
+  - **Inline-editable title**: Click to edit; `Enter` saves, `Escape` cancels, blur saves.
+  - **Status dropdown**: Displays current status with colored indicator. Options: `backlog`, `todo`, `in_progress`, `review`, `done`. Arabic labels.
+  - **Priority dropdown**: Displays current priority with colored dot from `PRIORITY_COLORS`. Options: low, medium, high, critical. Arabic labels.
+  - **Archive button**: `Archive` icon; calls `archiveTask()`. Shows «مؤرشفة» badge when archived.
+  - **Timestamps**: Creation date and last update date in Arabic locale format (`ar-EG`).
+
+- **State**
+  - `editingTitle`, `titleDraft` for inline editing.
+  - `showStatusDD`, `showPriorityDD` for dropdown visibility.
+
+---
+
+#### 4.3 Task Description
+
+- **File**
+  - `src/components/Task/TaskDescription.tsx`
+
+- **Features**
+  - **Click-to-edit**: Clicking the description text enters edit mode with a `textarea`.
+  - **Auto-resize**: Textarea height adjusts to content on input.
+  - **Controls**: Save (حفظ) and Cancel (إلغاء) buttons.
+  - **Empty state**: Placeholder text «أضف وصفاً لهذه المهمة...» when no description.
+  - **Integration**: Calls `updateTaskField({ description })` on save.
+
+---
+
+#### 4.4 Task Sidebar
+
+- **File**
+  - `src/components/Task/TaskSidebar.tsx`
+
+- **Sections**
+  - **Assignees (المسؤولون)**:
+    - Displays assigned users as avatar circles with initials (gradient `bg-linear-to-br from-sky-500 to-indigo-500`).
+    - Remove button on hover.
+    - «إضافة مسؤول» opens a searchable dropdown filtering `MOCK_USERS`.
+  - **Due Date (تاريخ الاستحقاق)**:
+    - Displays formatted date in Arabic locale or «لم يتم التحديد».
+    - Click opens `datetime-local` input.
+    - Overdue dates shown in `text-red-400`.
+    - Remove and close controls.
+  - **Tags (الوسوم)**:
+    - Displays tags as chips with remove buttons.
+    - «إضافة وسم» opens a dropdown list of `MOCK_TAGS` with toggle selection.
+  - **Iteration (الدورة / Sprint)**:
+    - Dropdown selector from `MOCK_ITERATIONS`.
+    - Option «بدون دورة» to clear iteration.
+
+- **Mock data**
+  - `MOCK_USERS`: 5 Arabic-named users.
+  - `MOCK_TAGS`: 7 tags (عاجل, تصميم, برمجة, مراجعة, اختبار, توثيق, بحث).
+  - `MOCK_ITERATIONS`: Sprint 1, Sprint 2, Sprint 3, Backlog.
+
+---
+
+#### 4.5 Subtask List
+
+- **File**
+  - `src/components/Task/SubtaskList.tsx`
+
+- **Features**
+  - **Progress bar**: Animated gradient bar (`bg-linear-to-l from-emerald-400 to-emerald-600`) showing `completed/total مكتمل` with percentage.
+  - **Subtask items**: Each row has:
+    - Up/down reorder buttons (visible on hover).
+    - Checkbox toggle (`CheckSquare`/`Square` icons, emerald when complete).
+    - Inline-editable title (click to edit; Enter/Escape/blur).
+    - Delete button (visible on hover, red on hover).
+    - Strikethrough styling for completed items.
+  - **Add input**: Text input + Plus button at the bottom. Enter key to add.
+
+---
+
+#### 4.6 Checklist Section
+
+- **File**
+  - `src/components/Task/ChecklistSection.tsx`
+
+- **Features**
+  - **Multiple checklists per task**: Each rendered with its own header, progress bar, and item list.
+  - **Checklist header**: `ListChecks` icon, title, `completed/total` count.
+  - **Progress bar**: Same gradient style as subtasks.
+  - **Checklist items**: Checkbox toggle, inline-editable title, delete button on hover.
+  - **Add item input**: Per-checklist input field + Plus button.
+  - **Add checklist**: Separate input at the bottom (below border) to create new checklists.
+
+---
+
+#### 4.7 Dependency Section
+
+- **File**
+  - `src/components/Task/DependencySection.tsx`
+
+- **Features**
+  - **Existing dependencies**: Displayed as cards with type indicator:
+    - `blocks` → `ArrowRight` icon + «يحظر» label (amber).
+    - `blocked_by` → `ArrowLeft` icon + «محظور بواسطة» label (blue).
+    - Target task title.
+    - Delete button (visible on hover).
+  - **Error display**: Red alert bar for circular dependency or other errors (`AlertTriangle` icon).
+  - **Add dependency panel**:
+    - Type selector: Two buttons for `blocks` / `blocked_by` with active state styling.
+    - Search input: Filters tasks from `useTaskStore` (excludes self and already-linked tasks).
+    - Results list: Clickable task titles (limited to 10 results).
+    - Cancel button.
+  - **Empty state**: «لا توجد تبعيات حالياً».
+  - **Integration**: Uses `useTaskStore` for task list access alongside `useTaskDetailStore` for dependency mutations.
+
+---
+
+#### 4.8 Custom Fields Section
+
+- **File**
+  - `src/components/Task/CustomFieldsSection.tsx`
+
+- **Features**
+  - Reads `customFields` (key-value object) from the task.
+  - **Inline editing**: Click a value to edit; Enter/Escape/blur to save.
+  - **Type coercion**: Input values are automatically parsed:
+    - `'true'`/`'false'` → boolean (displayed as «✓ نعم» / «✗ لا»).
+    - Numeric strings → number.
+    - Everything else → string.
+  - **Empty state**: `Settings2` icon + «لا توجد حقول مخصصة» + hint text.
+
+---
+
+#### 4.9 Attachment Section
+
+- **File**
+  - `src/components/Task/AttachmentSection.tsx`
+
+- **Features**
+  - **Drag-and-drop upload zone**: Dashed border area with `Upload` icon. Changes to sky-blue border on drag-over.
+    - Text: «اسحب الملفات هنا أو انقر للاختيار».
+    - Hidden `<input type="file" multiple>` triggered on click.
+  - **File list**: Each attachment rendered as a card:
+    - **Image preview**: Thumbnail (`w-10 h-10`) for `image/*` MIME types.
+    - **File type icons**: `FileImage` for images, `FileText` for PDFs, `File` for others.
+    - File name (truncated), size (formatted: B/KB/MB), upload date (Arabic locale).
+    - **Actions** (visible on hover): Download link (`<a download>`), Delete button.
+  - **Empty state**: «لا توجد مرفقات».
+
+- **Utility functions**
+  - `formatSize(bytes)`: Formats file size into human-readable format.
+  - `getFileIcon(mimeType)`: Returns appropriate Lucide icon based on MIME type.
+
+---
+
+#### 4.10 Activity Feed
+
+- **File**
+  - `src/components/Task/ActivityFeed.tsx`
+
+- **Features**
+  - **Timeline layout**: Vertical line (`w-px bg-slate-800`) connecting activity entries.
+  - **Activity entries**: Each entry has:
+    - **Icon circle**: Color-coded per `ActivityType` (emerald for created, sky for status change, amber for priority, etc.).
+    - **Actor name**: Bold text.
+    - **Description**: Activity description text.
+    - **Old/New values**: Displayed as inline chips when present — old value in red with strikethrough, `→` separator, new value in emerald.
+    - **Timestamp**: Arabic locale date/time (`ar-EG`).
+  - **Icon mapping**: Complete `ACTIVITY_ICONS` record mapping each `ActivityType` to a colored Lucide icon.
+  - **Pagination**: «تحميل المزيد» button shown when `activity.length < activityTotal`.
+  - **Empty state**: «لا يوجد نشاط حتى الآن».
+
+---
+
+### 5. Integration with Existing Components
+
+#### 5.1 TaskCard
+
+- **File**
+  - `src/components/Kanban/TaskCard.tsx`
+
+- **Changes**
+  - Added import of `useTaskDetailStore`.
+  - Added `openTaskDetail` selector from the detail store.
+  - Added `onClick` handler to the card's root `<div>`:
+    - Calls `openTaskDetail(task.id, task)` when the card is clicked.
+    - Guarded by `!snapshot.isDragging` to prevent opening the modal during drag operations.
+
+#### 5.2 KanbanBoard
+
+- **File**
+  - `src/components/Kanban/KanbanBoard.tsx`
+
+- **Changes**
+  - Added import of `TaskDetailModal`.
+  - Rendered `<TaskDetailModal />` at the end of the board component tree (outside `DragDropContext`) so it is accessible when any task card is clicked.
+
+---
+
+### 6. Summary of Phase 8 Status
+
+According to `FRONTEND_TODO.md`, all Phase 8 Task Management (Detail View) items are **completed**:
+
+- **Task Modal/Page**: Implemented full-featured `TaskDetailModal` with tabbed interface, two-column layout, Escape-to-close, body scroll lock, and loading/error states.
+- **Task Detail API Integration**: Mock service (`taskDetailService`) with CRUD for all entities, optimistic updates in store, loading and error handling.
+- **Subtasks Management**: Full CRUD with inline editing, checkbox toggle, up/down reorder, completion progress bar.
+- **Subtasks API Integration**: Mock service methods with store integration and optimistic updates.
+- **Task Checklists**: Multiple checklists per task, each with item CRUD, toggle, progress bars.
+- **Task Checklists API Integration**: Mock service and optimistic store updates for all checklist operations.
+- **Task Dependencies**: Add/remove with blocks/blocked-by type selection, task search, circular dependency detection.
+- **Task Dependencies API Integration**: Mock service with circular dependency validation.
+- **Task Custom Fields**: Display and inline editing with automatic type coercion (string, number, boolean).
+- **Task Custom Fields API Integration**: Updates via `updateTaskField` through the store.
+- **Task Attachments**: Drag-and-drop upload, file list with preview/icons, download, delete, size formatting.
+- **Task Attachments API Integration**: Mock upload/delete service with store integration.
+- **Task Activity/History**: Timeline-styled feed with per-type icons, old/new value diffs, paginated loading.
+- **Task Activity API Integration**: Paginated mock service with store integration.
+
+---

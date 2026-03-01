@@ -10,6 +10,7 @@ import {
   MoreVertical
 } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
+import { useTaskDetailStore } from '../../store/useTaskDetailStore';
 
 interface TaskCardProps {
   task: Task;
@@ -21,6 +22,7 @@ export function TaskCard({ task, index }: TaskCardProps) {
 
   const searchQuery = useTaskStore(state => state.searchQuery);
   const deleteTask = useTaskStore(state => state.deleteTask);
+  const openTaskDetail = useTaskDetailStore(state => state.openTaskDetail);
 
   const highlightText = (text: string) => {
     const query = searchQuery.trim();
@@ -67,6 +69,11 @@ export function TaskCard({ task, index }: TaskCardProps) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
+          onClick={() => {
+            if (!snapshot.isDragging) {
+              openTaskDetail(task.id, task);
+            }
+          }}
           className={`
             bg-slate-800 rounded-lg p-3 mb-2 border border-slate-700
             hover:border-slate-600 hover:shadow-lg transition-all cursor-pointer
