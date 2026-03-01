@@ -1035,3 +1035,123 @@ All Phase 6 items are **completed**:
 - **API Integration**: Mock service layer (`listService`) with optimistic updates and cache invalidation.
 
 ---
+
+## Phase 7 – Lists & Board Views
+
+This section describes everything implemented in **Phase 7 (Lists & Board Views)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. List View Wrapper & View Configuration
+
+- **List View Wrapper (Complete)**
+  - Implemented the main `ListView` page component and integrated it into the application routing structure (`/dashboard/list/:id`).
+  - Added a responsive view mode selector supporting various layouts: Kanban, Table, Calendar, and Timeline.
+  - Implemented the UI for switching views effortlessly.
+  - The integration accurately supports saving and loading view configurations through `localStorage`.
+  - Placeholder views were initially provided for Table, Calendar, and Timeline as intermediate phases.
+
+- **View Configuration API Integration (Mock - localStorage)**
+  - Developed mock API hooks and services to simulate saving and loading user-defined view configurations.
+  - Carefully handled all relevant loading and error states for a smooth user experience.
+
+---
+
+### 2. Kanban Board View (MVP Complete)
+
+#### 2.1 Toolbar & Controls
+  - Added comprehensive controls, including: Refresh button, View density toggle, Add column, and Add task buttons.
+  - Added a Filter button with an active filter indicator, Clear filters button, Sort dropdown/controls, Export button, and a Bulk actions menu.
+
+#### 2.2 Filtering System
+  - Implemented a collapsible Filter panel UI.
+  - Supported advanced filtering by: Assignee (dropdown with search), Status, Priority, Tags, Due date, and Custom fields.
+  - Handled the combination of filter groups supporting AND/OR logic.
+  - Provided features to save, load, and manage filter presets.
+  - Gave options to discard individual filters or clear all filter entries simultaneously.
+
+#### 2.3 Filtering API Integration
+  - Developed hooks and services to reliably fetch filtered tasks along with saving, retrieving, and safely deleting filter presets.
+  - Managed complex filter queries internally and optimized API calls heavily by introducing request debouncing and search result caching.
+
+#### 2.4 Search Functionality
+  - Integrated a global search bar inside the header to search globally or locally within the current list/board.
+  - Implemented search result highlighting alongside recent search histories.
+  - Added specific search filters to refine by Assignee, Status, and Date Range.
+
+#### 2.5 Search API Integration
+  - Built distinct API hooks/services accommodating both global searches and list-specific searches.
+  - Debounced search invocations, cached recent searches systematically, and monitored loading and error endpoints reliably.
+
+#### 2.6 Sorting System
+  - Allowed seamless sort variations by: Due date, Priority, Assignee, Creation date, and Custom fields.
+  - Supported drag-and-drop custom sort order configurations.
+  - Facilitated a smooth sort direction toggle (ascending/descending).
+
+#### 2.7 Sorting API Integration
+  - Set up an API service to fetch actively sorted tasks and handled parameter transmissions effectively while persisting user's sorting preferences.
+
+#### 2.8 Columns Management (MVP Complete)
+  - Features robust column enhancements: adding specific Status columns, renaming, deleting, and color customization.
+  - Included a task count tracker on the column's header, accessible column settings (context menu), and functional drag-and-drop integrations for intuitive column reordering.
+
+#### 2.9 Columns API Integration (Mock)
+  - Setup hooks to manage statuses: object creations, deletions, re-ordering, renaming, and color updates.
+  - Fetched active list statuses with complete loading/error boundaries.
+  - Leveraged optimistic UI updates integrated effectively via store/cache refreshes overriding mutations.
+
+#### 2.10 Task Cards (MVP Complete)
+  - The card component accurately displays all task properties, such as Title, Priority (colored bar indicator), multi-color Tags/Labels, and a precise Due Date with an overdue warning feature.
+  - Handled seamless drag-and-drop task relocations strictly across columns and reordering identically within single column boundaries.
+  - Refined visuals with status indicators and card hover effects.
+  - Encapsulated sub-data fields rendering visually: Assignee counts (avatars), Subtask progress (`"0/4"`), Checklist ratios (`"2/5"`), Sprint/Iteration badges, Custom Field values, attachment metrics/icons, and active dependency associations.
+  - Empowered interactions directly connecting cards with a robust Task Detail Modal and a dedicated context menu.
+
+#### 2.11 Tasks API Integration (Kanban - Mock)
+  - Created rigorous endpoint hooks covering task extraction lists alongside single entity lifecycle changes (creation, status updates tracking column shift, internal sort re-positioning, deletion).
+  - Maintained optimistic state synchronizations, large-scale dataset retrieval by tracking complete pagination, and incorporated active WebSocket hook updates handling server propagation correctly.
+
+---
+
+### 3. Table/List View
+  - Implemented a complete Table layout composed logically into rows and columns.
+  - Formulated advanced column customization enabling specific show/hide options, resizing, and precise reordering.
+  - Delivered responsive capabilities supporting inline text editing, dynamic row selection options processing subsequent bulk actions, sorting configurations, and active column data filtering mechanisms.
+
+- **Table View API Integration**
+  - Integrated comprehensive data fetching hooks specialized manually handling list iterations, responsive API callbacks processing inline dynamic updates, and streamlined tracking executions accommodating bulk item transitions appropriately (loading, optimistic results overriding errors).
+
+---
+
+### 4. Calendar View
+  - Engineered flexible calendar tracking layouts explicitly showcasing: strict Month, Week, and Day intervals.
+  - Developed functional capabilities executing direct visual task scheduling across given domains.
+  - Processed date navigation flows smoothly, a dynamic 'Today' positional indicator, and seamless drag-to-shift date reassignment features.
+
+- **Calendar View API Integration**
+  - Orchestrated date range boundary fetching effectively with internal API hooks updating dynamic tasks' deadline targets effectively across optimized endpoints.
+
+---
+
+### 5. Timeline View
+  - Brought into fruition a functional Timeline representation.
+  - Visualized component tasks mapped chronologically across varied duration bars accurately.
+  - Fostered broad navigability executing comprehensive date span sweeps alongside fully-functional zoom-out/zoom-in scaling handles.
+  - Unlocked relationship transparency illustrating visual mappings outlining connected task dependencies directly.
+
+- **Timeline View API Integration**
+  - Created advanced hook channels securing specialized queries mapping interval dates accurately and extrapolating specific dependencies accurately tracking targeted timeline intervals correctly across components.
+
+---
+
+### 6. Summary of Phase 7 Status
+
+According to `FRONTEND_TODO.md`, all Phase 7 Lists & Board Views items have been marked as **completed**:
+
+- **List View Wrapper & View Configuration**: ListView implemented, equipped with dynamic view configuration selection backed reliably against mock local storage.
+- **Kanban Board MVP**: Extensive core toolkit integrated effectively (toolbar controls, complex filtering + dependencies, specific board searching tools + persistence mapping, sort mechanisms, complete column interactions + statuses, multi-data loaded rich task cards routing safely against synchronized updates mapping mock WebSocket real-time behaviors).
+- **Table/List View**: Implemented fully equipped lists with complete customization rules (resize, reorder, sort, filter) actively pushing inline data logic mappings.
+- **Calendar View**: Built visually engaging task calendars spanning daily/weekly schedules backed accurately upon smooth interactions modifying API targets correctly.
+- **Timeline View**: Assembled scalable chronologies charting visual intervals alongside distinct dependency connections securely scaling specific dynamic queries appropriately.
+
+---

@@ -10,13 +10,21 @@ import {
   Plus,
   // Grid
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-// import { userService } from '../services/userService';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { searchService } from '../services/searchService';
+import { useTaskStore } from '../store/useTaskStore';
 
 export function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { setSearchQuery } = useTaskStore(state => ({
+    setSearchQuery: state.setSearchQuery
+  }));
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -28,6 +36,25 @@ export function Header() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Load recent searches on mount
+  useEffect(() => {
+    setRecentSearches(searchService.getRecentSearches());
+  }, []);
+
+  const handleSubmitSearch = (value: string) => {
+    const query = value.trim();
+    if (!query) return;
+
+    searchService.addRecentSearch(query);
+    setRecentSearches(searchService.getRecentSearches());
+
+    // If we're currently on a list/board view, apply search to that board
+    if (location.pathname.startsWith('/dashboard/list/')) {
+      setSearchQuery(query);
+    }
+    // Future (Phase 13): navigate to dedicated global search page
+  };
 
   const handleLogout = () => {
     localStorage.removeItem(import.meta.env.VITE_JWT_STORAGE_KEY || 'hayah_auth_token');
@@ -76,9 +103,54 @@ export function Header() {
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors" size={18} />
           <input
             type="text"
-            placeholder="بحث..."
+            placeholder="بحث عالمي عن المهام..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => {
+              // Delay blur handling slightly to allow click on dropdown items
+              setTimeout(() => setIsSearchFocused(false), 120);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmitSearch(searchTerm);
+              }
+            }}
             className="w-full bg-slate-800/50 border border-white/5 focus:border-blue-500/50 rounded-lg py-1.5 pr-10 pl-4 text-sm text-slate-200 focus:outline-none focus:bg-slate-800 transition-all placeholder:text-slate-500"
           />
+
+          {/* Recent searches dropdown */}
+          {isSearchFocused && recentSearches.length > 0 && (
+            <div className="absolute mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 z-40">
+              <div className="px-3 py-1.5 text-xs text-slate-500 flex items-center justify-between">
+                <span>عمليات البحث الأخيرة</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    searchService.clearRecentSearches();
+                    setRecentSearches([]);
+                  }}
+                  className="text-[11px] text-slate-500 hover:text-red-400 transition-colors"
+                >
+                  مسح الكل
+                </button>
+              </div>
+              {recentSearches.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm(q);
+                    handleSubmitSearch(q);
+                  }}
+                  className="w-full text-right px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800 flex items-center justify-between gap-2"
+                >
+                  <span className="truncate">{q}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
