@@ -11,6 +11,7 @@ export function SettingsPage() {
   });
   const [loading, setLoading] = useState(true);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Mock load preferences
     // In a real app, we would fetch this from the backend

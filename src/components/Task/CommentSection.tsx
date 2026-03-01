@@ -9,10 +9,10 @@ export function CommentSection() {
 
   // Load initial comments when component mounts
   useEffect(() => {
-    if (selectedTask?.comments.length === 0) {
+    if (selectedTask?.id) {
       loadComments(1);
     }
-  }, [selectedTask?.id]); // Note: intentionally relying on selectedTask.id to reload per task
+  }, [selectedTask?.id, loadComments, selectedTask?.comments?.length]); // Note: intentionally relying on selectedTask.id to reload per task
 
   if (!selectedTask) return null;
 

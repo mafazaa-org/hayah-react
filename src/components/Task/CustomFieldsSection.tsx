@@ -5,13 +5,13 @@ import { Settings2 } from 'lucide-react';
 export function CustomFieldsSection() {
   const { selectedTask, updateTaskField } = useTaskDetailStore();
 
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+
   if (!selectedTask) return null;
 
   const customFields = selectedTask.customFields || {};
   const entries = Object.entries(customFields);
-
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
 
   const saveField = (key: string) => {
     const newFields = { ...customFields };

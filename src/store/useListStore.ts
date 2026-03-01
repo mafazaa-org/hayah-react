@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { listService, type ListDetails } from '../services/listService';
 import { folderService, type NavigationItem } from '../services/folderService';
 import { useFolderStore } from './useFolderStore'; // To trigger tree refreshes
+import { sharingService, type ListMember, type Role } from '../services/sharingService';
 
 interface ListState {
   activeListId: string | null;
@@ -12,10 +13,15 @@ interface ListState {
   isCreateModalOpen: boolean;
   isSettingsModalOpen: boolean;
   isTemplatesModalOpen: boolean;
+  isShareModalOpen: boolean;
 
   // Context for modals (e.g., which folder to create list in, or which list to edit)
   contextParentId: string | null;
   contextListId: string | null;
+
+  // Sharing State
+  listMembers: ListMember[];
+  activeUsers: ListMember[]; // For presence
 
   // Actions
   setActiveList: (id: string | null) => void;
@@ -28,6 +34,15 @@ interface ListState {
   closeSettingsModal: () => void;
   openTemplatesModal: (parentId?: string | null) => void;
   closeTemplatesModal: () => void;
+  openShareModal: (listId: string) => void;
+  closeShareModal: () => void;
+
+  // Sharing Logic
+  fetchListMembers: (listId: string) => Promise<void>;
+  inviteMember: (listId: string, email: string, role: Role) => Promise<void>;
+  updateMemberRole: (listId: string, memberId: string, role: Role) => Promise<void>;
+  removeMember: (listId: string, memberId: string) => Promise<void>;
+  fetchUserPresence: (listId: string) => Promise<void>;
 
   // Business Logic
   createList: (name: string, parentId: string | null, fromTemplateIndex?: number) => Promise<void>;
@@ -44,8 +59,12 @@ export const useListStore = create<ListState>((set, get) => ({
   isCreateModalOpen: false,
   isSettingsModalOpen: false,
   isTemplatesModalOpen: false,
+  isShareModalOpen: false,
   contextParentId: null,
   contextListId: null,
+
+  listMembers: [],
+  activeUsers: [],
 
   setActiveList: (id) => {
     set({ activeListId: id });
@@ -75,6 +94,59 @@ export const useListStore = create<ListState>((set, get) => ({
 
   openTemplatesModal: (parentId = null) => set({ isTemplatesModalOpen: true, contextParentId: parentId }),
   closeTemplatesModal: () => set({ isTemplatesModalOpen: false, contextParentId: null }),
+
+  openShareModal: (listId) => set({ isShareModalOpen: true, contextListId: listId }),
+  closeShareModal: () => set({ isShareModalOpen: false, contextListId: null }),
+
+  // Sharing Actions
+  fetchListMembers: async () => {
+    try {
+      const members = await sharingService.getListMembers();
+      set({ listMembers: members });
+    } catch (error) {
+      console.error('Failed to fetch list members:', error);
+    }
+  },
+
+  inviteMember: async (listId, email, role) => {
+    try {
+      const newMember = await sharingService.inviteMember(listId, email, role);
+      set((state) => ({ listMembers: [...state.listMembers, newMember] }));
+    } catch (error) {
+      console.error('Failed to invite member:', error);
+    }
+  },
+
+  updateMemberRole: async (listId, memberId, role) => {
+    try {
+      const updatedMember = await sharingService.updateMemberRole(listId, memberId, role);
+      set((state) => ({
+        listMembers: state.listMembers.map(m => m.id === memberId ? updatedMember : m)
+      }));
+    } catch (error) {
+      console.error('Failed to update member role:', error);
+    }
+  },
+
+  removeMember: async (listId, memberId) => {
+    try {
+      await sharingService.removeMember(listId, memberId);
+      set((state) => ({
+        listMembers: state.listMembers.filter(m => m.id !== memberId)
+      }));
+    } catch (error) {
+      console.error('Failed to remove member:', error);
+    }
+  },
+
+  fetchUserPresence: async () => {
+    try {
+      const active = await sharingService.getActiveUsers();
+      set({ activeUsers: active });
+    } catch (error) {
+      console.error('Failed to fetch user presence:', error);
+    }
+  },
 
   createList: async (name, parentId, fromTemplateIndex) => {
     set({ isLoading: true });

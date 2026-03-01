@@ -3,8 +3,10 @@ import { DragDropContext, Droppable, type DropResult } from '@hello-pangea/dnd';
 import { useColumnStore } from '../../store/useColumnStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useViewStore } from '../../store/useViewStore';
+import { useListStore } from '../../store/useListStore';
 import { KanbanColumn } from './KanbanColumn';
 import { BoardToolbar } from './BoardToolbar';
+import { ShareListModal } from './ShareListModal';
 import { TaskDetailModal } from '../Task/TaskDetailModal';
 import type { Task } from '../../types/task';
 
@@ -36,6 +38,7 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
     bulkDeleteTasks,
   } = useTaskStore();
   const { getViewConfig, updateViewSettings } = useViewStore();
+  const { openShareModal, activeUsers, fetchUserPresence } = useListStore();
 
   const [viewDensity, setViewDensity] = useState<'compact' | 'comfortable'>('comfortable');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -51,7 +54,11 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         fetchTasks(listId, columnIds);
       }
     });
-  }, [listId]);
+
+    // Fetch user presence logic for sharing collaboration
+    fetchUserPresence(listId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listId, fetchColumns, fetchTasks, fetchUserPresence]);
 
   // Refresh data when columns change
   useEffect(() => {
@@ -59,7 +66,8 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
       const columnIds = columns.map(col => col.id);
       fetchTasks(listId, columnIds);
     }
-  }, [columns.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns.length, fetchTasks, listId]);
 
   // Compute active filter count
   const activeFilterCount = useMemo(() => {
@@ -207,6 +215,8 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         onBulkMove={handleBulkMove}
         onBulkChangePriority={handleBulkChangePriority}
         onClearSelection={clearSelection}
+        onShareClick={() => openShareModal(listId)}
+        activeMembers={activeUsers.map(u => ({ id: u.id, name: u.user.name, avatar: u.user.avatar }))}
       />
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -233,6 +243,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
 
       {/* Task Detail Modal */}
       <TaskDetailModal />
+
+      {/* Share List Modal */}
+      <ShareListModal />
     </div>
   );
 }

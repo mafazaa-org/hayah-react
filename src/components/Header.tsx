@@ -23,7 +23,9 @@ export function Header() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() =>
+    searchService.getRecentSearches()
+  );
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Close dropdown when clicking outside
@@ -37,10 +39,7 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Load recent searches on mount
-  useEffect(() => {
-    setRecentSearches(searchService.getRecentSearches());
-  }, []);
+
 
   const handleSubmitSearch = (value: string) => {
     const query = value.trim();

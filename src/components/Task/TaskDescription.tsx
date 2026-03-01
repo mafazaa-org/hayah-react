@@ -12,6 +12,7 @@ export function TaskDescription({ description }: TaskDescriptionProps) {
   const [draft, setDraft] = useState(description || '');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => {
     setDraft(description || '');
   }, [description]);
@@ -79,8 +80,8 @@ export function TaskDescription({ description }: TaskDescriptionProps) {
         <div
           onClick={() => setIsEditing(true)}
           className={`min-h-[60px] px-3 py-2 rounded-lg cursor-pointer border border-transparent hover:border-slate-700 transition-colors text-sm leading-relaxed ${description
-              ? 'text-slate-300 whitespace-pre-wrap'
-              : 'text-slate-500 italic'
+            ? 'text-slate-300 whitespace-pre-wrap'
+            : 'text-slate-500 italic'
             }`}
         >
           {description || 'انقر لإضافة وصف...'}

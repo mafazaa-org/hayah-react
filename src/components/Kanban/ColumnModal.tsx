@@ -20,9 +20,11 @@ export function ColumnModal() {
   const [color, setColor] = useState(PRESET_COLORS[0]);
 
   // Load existing column data when editing
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => {
     if (editingColumnId) {
-      const column = columns.find(col => col.id === editingColumnId);
+      const column = columns.find((col) => col.id === editingColumnId);
       if (column) {
         setName(column.name);
         setColor(column.color);

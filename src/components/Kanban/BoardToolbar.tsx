@@ -1,4 +1,4 @@
-import { RefreshCw, Plus, LayoutGrid, Filter, X, Search } from 'lucide-react';
+import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users } from 'lucide-react';
 import { SortDropdown, type SortOptions } from './SortDropdown';
 import { ExportMenu } from './ExportMenu';
 import { BulkActionsMenu } from './BulkActionsMenu';
@@ -43,6 +43,10 @@ interface BoardToolbarProps {
   onBulkMove: () => void;
   onBulkChangePriority: () => void;
   onClearSelection: () => void;
+
+  // Sharing
+  onShareClick: () => void;
+  activeMembers?: Array<{ id: string; avatar?: string; name: string }>;
 }
 
 export function BoardToolbar({
@@ -71,7 +75,9 @@ export function BoardToolbar({
   onBulkDelete,
   onBulkMove,
   onBulkChangePriority,
-  onClearSelection
+  onClearSelection,
+  onShareClick,
+  activeMembers = []
 }: BoardToolbarProps) {
   return (
     <div className="relative mb-4 px-2">
@@ -156,6 +162,41 @@ export function BoardToolbar({
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+
+          {/* Active Members Stack (Presence) */}
+          {activeMembers.length > 0 && (
+            <div className="hidden sm:flex items-center -space-x-2 space-x-reverse mr-2">
+              {activeMembers.slice(0, 3).map((member, i) => (
+                <div
+                  key={member.id}
+                  className={`w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px] text-white overflow-hidden relative z-[${10 - i}]`}
+                  title={`${member.name} (متصل)`}
+                >
+                  {member.avatar ? (
+                    <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
+                  ) : (
+                    member.name.charAt(0)
+                  )}
+                  <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border border-slate-900 rounded-full"></span>
+                </div>
+              ))}
+              {activeMembers.length > 3 && (
+                <div className="w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] text-slate-300 relative z-0">
+                  +{activeMembers.length - 3}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Share Button */}
+          <button
+            onClick={onShareClick}
+            className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 ring-1 ring-slate-700 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Users size={16} />
+            مشاركة
+          </button>
+
           {/* Export Menu */}
           <ExportMenu tasks={tasks} columns={columns} />
 

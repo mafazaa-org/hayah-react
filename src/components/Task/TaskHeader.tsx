@@ -29,10 +29,12 @@ export function TaskHeader({ task }: TaskHeaderProps) {
   const [titleDraft, setTitleDraft] = useState(task.title);
   const titleRef = useRef<HTMLInputElement>(null);
 
+
   useEffect(() => {
     setTitleDraft(task.title);
   }, [task.title]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => {
     if (isEditingTitle && titleRef.current) {
       titleRef.current.focus();

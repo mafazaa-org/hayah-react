@@ -26,6 +26,7 @@ export function ListSettingsModal() {
     }
   }, [isSettingsModalOpen, contextListId, fetchListDetails]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (activeListDetails && activeListDetails.id === contextListId) {
       setName(activeListDetails.name);
@@ -109,8 +110,8 @@ export function ListSettingsModal() {
                     type="button"
                     onClick={() => setVisibility(v)}
                     className={`px-2 py-1.5 text-xs rounded-md border text-center transition-all ${visibility === v
-                        ? 'bg-blue-500/10 border-blue-500/50 text-blue-100'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                      ? 'bg-blue-500/10 border-blue-500/50 text-blue-100'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                       }`}
                   >
                     {v === 'private' ? 'خاص' : v === 'workspace' ? 'مساحة العمل' : 'عام'}

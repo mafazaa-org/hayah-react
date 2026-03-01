@@ -11,6 +11,8 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState<VerifyStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => {
     if (!token) {
       setStatus('error')

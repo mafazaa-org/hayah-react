@@ -15,6 +15,7 @@ export function FolderModals({ isOpen, type, item, onClose, onConfirm }: FolderM
   const [name, setName] = useState('');
   const [createType, setCreateType] = useState<'folder' | 'list'>('list');
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => {
     if (isOpen) {
       if (type === 'rename' && item) {

@@ -21,7 +21,7 @@ export function FolderTree() {
 
   useEffect(() => {
     fetchTree();
-  }, []);
+  }, [fetchTree]);
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;

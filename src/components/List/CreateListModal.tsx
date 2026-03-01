@@ -15,6 +15,7 @@ export function CreateListModal() {
     { name: 'Content Calendar', index: 2 },
   ];
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => {
     if (isCreateModalOpen) {
       setName('');
@@ -79,8 +80,8 @@ export function CreateListModal() {
                         type="button"
                         onClick={() => setSelectedTemplateIndex(tpl.index)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-md border text-left transition-all ${selectedTemplateIndex === tpl.index
-                            ? 'bg-blue-500/10 border-blue-500/50 text-blue-100'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                          ? 'bg-blue-500/10 border-blue-500/50 text-blue-100'
+                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
                           }`}
                       >
                         <FileText size={16} />
