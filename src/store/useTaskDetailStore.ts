@@ -8,6 +8,7 @@ import type {
 } from '../types/task';
 import { taskDetailService } from '../services/taskDetailService';
 import { commentService } from '../services/commentService';
+import { socketService } from '../services/socketService';
 
 export type DetailTab =
   | 'details'
@@ -72,6 +73,10 @@ interface TaskDetailState {
   deleteCommentAttachment: (commentId: string, attachmentId: string) => Promise<void>;
   commentPage: number;
   commentTotal: number;
+
+  // Socket
+  initializeSocketListeners: () => void;
+  removeSocketListeners: () => void;
 }
 
 export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
@@ -567,4 +572,42 @@ export const useTaskDetailStore = create<TaskDetailState>((set, get) => ({
       set({ selectedTask });
     }
   },
+
+  // ─── Socket ───────────────────────────────────────────────────
+  initializeSocketListeners: () => {
+    socketService.off('new_comment');
+    socketService.on('new_comment', (data) => {
+      const { selectedTask } = get();
+      // Only append if we are viewing the task that got the new comment
+      if (selectedTask && selectedTask.id === data.taskId) {
+        // We'll simulate fetching the new comment or constructing a basic one
+        // In a real app the websocket payload usually contains the full comment object
+        const newComment = {
+          id: data.commentId,
+          taskId: data.taskId,
+          authorId: data.authorId,
+          authorName: 'مستخدم (بث حي)', // Simulated name since mock might not know
+          content: data.content,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          isEdited: false,
+          mentionedUsers: [],
+          attachments: [],
+          reactions: []
+        };
+
+        set((state) => ({
+          selectedTask: {
+            ...state.selectedTask!,
+            comments: [newComment, ...state.selectedTask!.comments]
+          },
+          commentTotal: state.commentTotal + 1
+        }));
+      }
+    });
+  },
+
+  removeSocketListeners: () => {
+    socketService.off('new_comment');
+  }
 }));

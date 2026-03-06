@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTaskDetailStore } from '../../store/useTaskDetailStore';
+import { usePresenceStore } from '../../store/usePresenceStore';
+import { socketService } from '../../services/socketService';
 import { Send, Paperclip, X, File, Loader2, AtSign } from 'lucide-react';
 import { commentService } from '../../services/commentService';
 import type { CommentAttachment } from '../../types/task';
 
 export function CommentComposer() {
-  const { addComment, uploadCommentAttachment } = useTaskDetailStore();
+  const { addComment, uploadCommentAttachment, selectedTask } = useTaskDetailStore();
+  const { typingUsers } = usePresenceStore();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Attachments
   const [attachments, setAttachments] = useState<CommentAttachment[]>([]);
@@ -33,6 +37,16 @@ export function CommentComposer() {
   const handleChange = async (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     setContent(val);
+
+    // Emit typing event
+    if (selectedTask) {
+      socketService.emit('typing', { taskId: selectedTask.id, isTyping: true });
+
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socketService.emit('typing', { taskId: selectedTask.id, isTyping: false });
+      }, 2000);
+    }
 
     const cursor = e.target.selectionStart;
     const textBeforeCursor = val.slice(0, cursor);
@@ -139,7 +153,13 @@ export function CommentComposer() {
     setAttachments([]);
     setMentionedIds([]);
     setIsSubmitting(false);
+
+    if (selectedTask) {
+      socketService.emit('typing', { taskId: selectedTask.id, isTyping: false });
+    }
   };
+
+  const currentTypingUsers = selectedTask ? (typingUsers[selectedTask.id] || []) : [];
 
   return (
     <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex flex-col gap-3 relative">
@@ -249,6 +269,14 @@ export function CommentComposer() {
           إرسال
         </button>
       </div>
+
+      {currentTypingUsers.length > 0 && (
+        <div className="absolute -bottom-6 right-2 text-xs text-slate-400 italic animate-pulse">
+          {currentTypingUsers.length > 1
+            ? 'عدة أشخاص يكتبون...'
+            : 'شخص ما يكتب الآن...'}
+        </div>
+      )}
     </div>
   );
 }

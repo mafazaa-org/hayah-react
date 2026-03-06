@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useTaskDetailStore } from '../../store/useTaskDetailStore';
+import { usePresenceStore } from '../../store/usePresenceStore';
 import type { TaskComment } from '../../types/task';
 import { MoreHorizontal, Edit2, Trash2, Smile, X, File, Download } from 'lucide-react';
 
@@ -16,6 +17,8 @@ export function CommentItem({ comment }: CommentItemProps) {
   const [showOptions, setShowOptions] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
+  const onlineUsers = usePresenceStore(state => state.onlineUsers);
+  const isOnline = onlineUsers[comment.authorId];
 
   // Group reactions by emoji
   const reactionMap = comment.reactions.reduce((acc, r) => {
@@ -78,13 +81,16 @@ export function CommentItem({ comment }: CommentItemProps) {
   return (
     <div className="flex gap-4 group">
       {/* Avatar */}
-      <div className="shrink-0 pt-1">
+      <div className="shrink-0 pt-1 relative">
         {comment.authorAvatarUrl ? (
           <img src={comment.authorAvatarUrl} alt={comment.authorName} className="w-10 h-10 rounded-full object-cover border border-slate-700" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-medium text-sm shadow-sm">
             {comment.authorName.charAt(0)}
           </div>
+        )}
+        {isOnline && (
+          <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-slate-900 rounded-full" />
         )}
       </div>
 

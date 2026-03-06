@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Notification } from '../types/notification';
 import { notificationService } from '../services/notificationService';
+import { socketService } from '../services/socketService';
 
 interface NotificationState {
   notifications: Notification[];
@@ -15,6 +16,8 @@ interface NotificationState {
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
   fetchUnreadCount: () => Promise<void>;
+  initializeSocketListeners: () => void;
+  removeSocketListeners: () => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -102,5 +105,19 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch unread count', error);
     }
+  },
+
+  initializeSocketListeners: () => {
+    socketService.off('new_notification');
+    socketService.on('new_notification', () => {
+      // Optimistically increment unread count to simulate real-time notification
+      set((state) => ({ unreadCount: state.unreadCount + 1 }));
+      // Also fetch the actual notifications list to keep it updated
+      get().fetchNotifications(1);
+    });
+  },
+
+  removeSocketListeners: () => {
+    socketService.off('new_notification');
   }
 }));

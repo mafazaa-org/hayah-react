@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useTaskDetailStore } from '../../store/useTaskDetailStore';
+import { usePresenceStore } from '../../store/usePresenceStore';
 
 interface TaskCardProps {
   task: Task;
@@ -23,6 +24,7 @@ export function TaskCard({ task, index }: TaskCardProps) {
   const searchQuery = useTaskStore(state => state.searchQuery);
   const deleteTask = useTaskStore(state => state.deleteTask);
   const openTaskDetail = useTaskDetailStore(state => state.openTaskDetail);
+  const onlineUsers = usePresenceStore(state => state.onlineUsers);
 
   const highlightText = (text: string) => {
     const query = searchQuery.trim();
@@ -195,22 +197,24 @@ export function TaskCard({ task, index }: TaskCardProps) {
             <div className="flex items-center gap-2 text-slate-400">
               {/* Assignee avatars (initials) */}
               {task.assignees && task.assignees.length > 0 && (
-                <div className="flex -space-x-2">
-                  {task.assignees.slice(0, 3).map((id) => (
-                    <div
-                      key={id}
-                      className="w-5 h-5 rounded-full bg-slate-700 border border-slate-900 flex items-center justify-center text-[10px]"
-                      title={id}
-                    >
-                      {id
-                        .split(/[-_]/)
-                        .map(part => part[0]?.toUpperCase())
-                        .join('')
-                        .slice(0, 2)}
-                    </div>
-                  ))}
+                <div className="flex -space-x-2 rtl:space-x-reverse">
+                  {task.assignees.slice(0, 3).map((id) => {
+                    const isOnline = onlineUsers[id];
+                    return (
+                      <div key={id} className="relative w-5 h-5 rounded-full bg-slate-700 border border-slate-900 flex items-center justify-center text-[10px]" title={id}>
+                        {id
+                          .split(/[-_]/)
+                          .map(part => part[0]?.toUpperCase())
+                          .join('')
+                          .slice(0, 2)}
+                        {isOnline && (
+                          <div className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-green-500 border border-slate-900 rounded-full" />
+                        )}
+                      </div>
+                    );
+                  })}
                   {task.assignees.length > 3 && (
-                    <div className="w-5 h-5 rounded-full bg-slate-600 border border-slate-900 flex items-center justify-center text-[10px]">
+                    <div className="w-5 h-5 rounded-full bg-slate-600 border border-slate-900 flex items-center justify-center text-[10px] z-10">
                       +{task.assignees.length - 3}
                     </div>
                   )}

@@ -1617,6 +1617,55 @@ According to `FRONTEND_TODO.md`, all Phase 9 features are **completed**:
 
 ---
 
+## Phase 12: Real-time Updates
+
+### 1. Data Models & Events
+
+- **File**: `src/services/socketService.ts`
+- **Interfaces**:
+  - `ServerToClientEvents`: Strongly typed events dispatched from server to client, including `user_presence`, `user_typing`, `task_updated`, `new_comment`, `new_notification`, etc.
+  - `ClientToServerEvents`: Strongly typed events emitted by the client, including `typing`, `join_task`, `leave_task`, `update_presence`.
+
+### 2. API & Services
+
+- **MockSocket Service**: `src/services/socketService.ts`
+- **Purpose**: Developed a rich client-side `MockSocket` class that mimics the `socket.io-client` interface to simulate backend connectivity and events while the real backend is unavailable.
+- **Features**:
+  - Standard `on`, `off`, `emit`, `connect`, and `disconnect` methods.
+  - `startSimulatedEvents`: Uses `setInterval` to periodically dispatch synthetic events simulating users coming online/offline (presence updates) and new system notifications.
+  - Simulates auto-reply network phenomena like receiving "user\_typing" events shortly after the current user emits them.
+
+### 3. State Management (Zustand Stores)
+
+- **User Presence Store**: `src/store/usePresenceStore.ts`
+  - Maintains `onlineUsers` (Record mapping IDs to connection boolean flags).
+  - Maintains `typingUsers` (Record mapping task IDs to lists of user names actively typing).
+  - Listens to `user_presence` to toggle `onlineUsers`.
+  - Listens to `user_typing` to populate `typingUsers` with an auto-clear timeout mechanism avoiding sticky indicators.
+- **Store Integration**:
+  - `useNotificationStore`: Listens to `new_notification` to increment unread badges.
+  - `useTaskStore`: Listens to `task_updated` to optimistically perform map-and-replace updates across the global Kanban view without expensive data refetching.
+  - `useTaskDetailStore`: Listens to `new_comment` to inject live comments exclusively into the currently viewed task structure.
+
+### 4. UI Components
+
+- **Application Root (`App.tsx`)**:
+  - Mounts active global Socket listener delegates via a persistent `useEffect`. 
+  - Subscribes to cross-cutting concerns immediately upon application login via initialized store bindings (`initializeSocketListeners`, `removeSocketListeners`).
+- **Presence Indicators**:
+  - **Avatars & TaskCard**: Modified `TaskCard.tsx` and `CommentItem.tsx` avatars to display a green absolute-positioned dot based on real-time lookup against the `usePresenceStore.onlineUsers` map.
+- **Typing Indicators**:
+  - **Comment Composer**: Integrated `socketService.emit('typing')` within text input handlers.
+  - Formatted a dynamic absolute "User is typing..." badge beneath the composer input dynamically bound to `typingUsers[taskId]`.
+
+### 5. Summary of Phase 12 Status
+
+According to `FRONTEND_TODO.md`, all core real-time expectations have been established and wired, thereby marking Phase 12 as **completed**:
+- Built and utilized `MockSocket` for simulating Live Server-Sent Events dynamically.
+- Pushed updates straight to UI via Zustand subscriptions simulating optimistic/pushed conflict resolutions.
+- Surfaced User Presence natively in avatars and inputs.
+- Cleaned up socket listeners explicitly to preserve component performance and memory footprint.
+
 ## Phase 11 – Notifications
 
 This section describes everything implemented in **Phase 11 (Notifications)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.

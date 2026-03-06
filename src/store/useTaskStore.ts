@@ -3,6 +3,7 @@ import type { Task } from '../types/task';
 import { taskService } from '../services/taskService';
 import type { FilterOptions } from '../components/Kanban/FilterPanel';
 import type { SortOptions } from '../components/Kanban/SortDropdown';
+import { socketService } from '../services/socketService';
 
 interface TaskState {
   // State
@@ -54,6 +55,10 @@ interface TaskState {
   getTasksByColumn: (columnId: string) => Task[];
   getFilteredAndSortedTasks: () => Task[];
   getAvailableTags: () => string[];
+
+  // Socket
+  initializeSocketListeners: () => void;
+  removeSocketListeners: () => void;
 }
 
 export const useTaskStore = create<TaskState>((set, get) => ({
@@ -440,5 +445,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       task.tags?.forEach(tag => tagsSet.add(tag));
     });
     return Array.from(tagsSet);
+  },
+
+  initializeSocketListeners: () => {
+    socketService.off('task_updated');
+    socketService.on('task_updated', (data) => {
+      // Optimistically update lists without re-fetching
+      set((state) => ({
+        tasks: state.tasks.map(task =>
+          task.id === data.taskId ? { ...task, ...data } : task
+        )
+      }));
+    });
+  },
+
+  removeSocketListeners: () => {
+    socketService.off('task_updated');
   }
 }));

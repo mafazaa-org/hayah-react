@@ -11,8 +11,34 @@ import { ProfilePage } from './pages/ProfilePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ListView } from './pages/ListView'
 import { MainLayout } from './layouts/MainLayout'
+import { LiveCursors } from './components/LiveCursors'
+
+import { useEffect } from 'react';
+import { usePresenceStore } from './store/usePresenceStore';
+import { useNotificationStore } from './store/useNotificationStore';
+import { useTaskStore } from './store/useTaskStore';
+import { useTaskDetailStore } from './store/useTaskDetailStore';
 
 function App() {
+  useEffect(() => {
+    // Initialize global WebSocket listeners
+    const initializePresence = usePresenceStore.getState().initializeSocketListeners;
+    const { fetchUnreadCount, initializeSocketListeners: initNotifListeners } = useNotificationStore.getState();
+    const initTaskListeners = useTaskStore.getState().initializeSocketListeners;
+    const initTaskDetailListeners = useTaskDetailStore.getState().initializeSocketListeners;
+
+    initializePresence();
+    initNotifListeners?.();
+    initTaskListeners?.();
+    initTaskDetailListeners?.();
+    fetchUnreadCount();
+
+    return () => {
+      usePresenceStore.getState().removeSocketListeners();
+      useNotificationStore.getState().removeSocketListeners?.();
+    };
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -34,6 +60,7 @@ function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <LiveCursors />
     </BrowserRouter>
   )
 }
