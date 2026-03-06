@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   Search,
-  Bell,
   HelpCircle,
   Settings,
   LogOut,
@@ -13,6 +12,8 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { searchService } from '../services/searchService';
 import { useTaskStore } from '../store/useTaskStore';
+import { NotificationDropdown } from './Notifications/NotificationDropdown';
+
 
 export function Header() {
   const navigate = useNavigate();
@@ -160,10 +161,7 @@ export function Header() {
           <Plus size={20} />
         </button>
 
-        <button className="p-2 text-slate-300 hover:bg-white/5 rounded-full relative group">
-          <Bell size={20} />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
-        </button>
+        <NotificationDropdown />
 
         <button className="p-2 text-slate-300 hover:bg-white/5 rounded-full hidden sm:block">
           <HelpCircle size={20} />

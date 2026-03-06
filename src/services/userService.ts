@@ -13,7 +13,13 @@ export interface UserPreferences {
   emailNotifications: boolean;
   pushNotifications: boolean;
   language: string;
+  taskAssignments: boolean;
+  taskDueDates: boolean;
+  comments: boolean;
+  mentions: boolean;
+  statusChanges: boolean;
 }
+
 
 export const userService = {
   getProfile: async (): Promise<UserProfile> => {

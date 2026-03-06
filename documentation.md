@@ -1614,3 +1614,90 @@ According to `FRONTEND_TODO.md`, all Phase 9 features are **completed**:
 - **Collaboration Elements**: Complete with `@mention` autocomplete tracking and comment reactions with real counts.
 - **Comment Attachments**: Provides upload progress simulation, display thumbnails, and deletion mechanisms.
 - **Service Integration**: Services and Action dispatches implemented with loading, error states, and optimistic UI updates for real-time emulation.
+
+---
+
+## Phase 11 – Notifications
+
+This section describes everything implemented in **Phase 11 (Notifications)** for the Hayah frontend, as tracked in `FRONTEND_TODO.md`. No items from this phase are omitted.
+
+---
+
+### 1. Data Models and Types
+
+- **File**: `src/types/notification.ts`
+- **Interfaces**:
+  - `NotificationType` enum encompassing: `task_assignment`, `task_due_date`, `comment`, `status_change`, `mention`, `file_attachment`.
+  - `NotificationActor` – `id`, `name`, `avatarUrl`, `email`.
+  - `Notification` – Contains metadata such as `id`, `userId`, `type`, `title`, `message`, `isRead`, timestamp `createdAt`, and optional relation IDs (`taskId`, `listId`, `commentId`, `actor`).
+  - `NotificationPreferences` – Extended to include granular toggles for all notification types (e.g., `taskAssignments`, `mentions`).
+
+---
+
+### 2. API Service Layer
+
+- **File**: `src/services/notificationService.ts`
+- **Purpose**: Provides a mock backend capable of responding with a static set of realistic notifications and simulating network delays.
+- **Methods**:
+  - `fetchNotifications(page, limit)` – Paginated retrieval of the mock data array.
+  - `markAsRead(id)` – Mutates a specific notification's `isRead` flag to true.
+  - `markAllAsRead()` – Iterates through and flags all notifications as read.
+  - `deleteNotification(id)` – Removes a notification entirely from the mock dataset.
+  - `getUnreadCount()` – Returns an aggregate count of all non-read items.
+
+---
+
+### 3. State Management (Zustand Store)
+
+- **File**: `src/store/useNotificationStore.ts`
+- **Purpose**: Orchestrates the global notification state independently of the React component tree.
+- **State Properties**: `notifications`, `unreadCount`, `isLoading`, `error`, `hasMore`, `page`.
+- **Actions**:
+  - `fetchNotifications`, `fetchUnreadCount`
+  - `markAsRead`, `markAllAsRead`, `deleteNotification`
+  - All mutating actions leverage **optimistic UI updates** inside the store logic to provide instant visual feedback to the user, with automatic rollback/refresh if the mock service call were to throw an error.
+
+---
+
+### 4. UI Components & Notifications Center
+
+#### 4.1 Notification Item
+- **File**: `src/components/Notifications/NotificationItem.tsx`
+- **Features**:
+  - Conditionally renders an icon depending on `notification.type` using `lucide-react` icons (e.g., `AtSign` for mentions, `UserPlus` for assignment).
+  - Uses `date-fns` (with Arabic locale) for human-readable relative timestamps.
+  - Hover states expose embedded quick-action buttons for marking as read or deleting the notification.
+
+#### 4.2 Notification Dropdown
+- **File**: `src/components/Notifications/NotificationDropdown.tsx`
+- **Features**:
+  - Connected directly to the Zustand store. Periodically sets an `unreadCount` badge on the bell icon.
+  - Click-away listener safely collapses the dropdown menu.
+  - Provides a header action to "تحديد الكل كمقروء" (Mark all as read) or a settings icon navigating directly to `/settings`.
+  - Fallback empty states logic smoothly handles when a user has no notifications.
+
+#### 4.3 App Header Integration
+- **File**: `src/components/Header.tsx`
+- **Modifications**:
+  - Exchanged the static `<Bell />` component with the newly implemented `<NotificationDropdown />`, immediately making the notification center accessible globally via the app shell.
+
+---
+
+### 5. Settings & User Preferences
+
+- **File**: `src/pages/SettingsPage.tsx` and `src/services/userService.ts`.
+- **Modifications**:
+  - Extracted existing `UserPreferences` type constraints and introduced specific UI toggles in `SettingsPage.tsx` for granular push/email alerts.
+  - Users can now independently toggle preferences for assignments, due dates, comments, mentions, and status changes. Local component state instantly reflects changes while initiating an optimistic `userService.updatePreferences` call.
+
+---
+
+### 6. Summary of Phase 11 Status
+
+According to `FRONTEND_TODO.md`, all core UI and integrations for Phase 11 are **completed**:
+- **Notifications Center**: Built the bell drop-down displaying alerts natively in the header. Allows granular read/unread controls natively inside the UI.
+- **Notifications API**: Completed the mock API handling fetching, pagination readiness, and counting.
+- **Notification Types**: Successfully defined robust Typescript types capturing realistic schema structures.
+- **Notification Preferences**: Finished building the user interface settings component allowing selective notification channels.
+
+*Note: The real-time notification streaming via WebSocket is intentionally deferred to Phase 12.*

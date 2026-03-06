@@ -7,7 +7,12 @@ export function SettingsPage() {
     theme: 'dark',
     emailNotifications: true,
     pushNotifications: true,
-    language: 'ar'
+    language: 'ar',
+    taskAssignments: true,
+    taskDueDates: true,
+    comments: true,
+    mentions: true,
+    statusChanges: true
   });
   const [loading, setLoading] = useState(true);
 
@@ -64,25 +69,79 @@ export function SettingsPage() {
         {/* Notifications */}
         <div className="bg-slate-900 p-6 rounded-lg shadow-md border border-slate-800">
           <h2 className="text-xl font-bold mb-4">الإشعارات</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span>إشعارات البريد الإلكتروني</span>
-              <input
-                type="checkbox"
-                checked={preferences.emailNotifications}
-                onChange={() => handleToggle('emailNotifications')}
-                className="w-5 h-5 accent-blue-600"
-              />
+          <div className="space-y-6">
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-400 border-b border-slate-800 pb-2">قنوات الإشعارات</h3>
+              <div className="flex items-center justify-between">
+                <span>إشعارات البريد الإلكتروني</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.emailNotifications}
+                  onChange={() => handleToggle('emailNotifications')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span>إشعارات المتصفح (Push)</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.pushNotifications}
+                  onChange={() => handleToggle('pushNotifications')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span>إشعارات المتصفح (Push)</span>
-              <input
-                type="checkbox"
-                checked={preferences.pushNotifications}
-                onChange={() => handleToggle('pushNotifications')}
-                className="w-5 h-5 accent-blue-600"
-              />
+
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-400 border-b border-slate-800 pb-2">أنواع الإشعارات</h3>
+              <div className="flex items-center justify-between">
+                <span>تعيين المهام</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.taskAssignments}
+                  onChange={() => handleToggle('taskAssignments')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span>مواعيد الاستحقاق</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.taskDueDates}
+                  onChange={() => handleToggle('taskDueDates')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span>التعليقات</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.comments}
+                  onChange={() => handleToggle('comments')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span>الإشارات (Mentions)</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.mentions}
+                  onChange={() => handleToggle('mentions')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <span>تغييرات الحالة</span>
+                <input
+                  type="checkbox"
+                  checked={preferences.statusChanges}
+                  onChange={() => handleToggle('statusChanges')}
+                  className="w-5 h-5 accent-blue-600 cursor-pointer"
+                />
+              </div>
             </div>
+
           </div>
         </div>
 
