@@ -49,11 +49,13 @@ export function Header() {
     searchService.addRecentSearch(query);
     setRecentSearches(searchService.getRecentSearches());
 
-    // If we're currently on a list/board view, apply search to that board
+    // Update query in store if we're on a list view so local search reflects it
     if (location.pathname.startsWith('/dashboard/list/')) {
       setSearchQuery(query);
     }
-    // Future (Phase 13): navigate to dedicated global search page
+
+    // Navigate to dedicated global search page
+    navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const handleLogout = () => {

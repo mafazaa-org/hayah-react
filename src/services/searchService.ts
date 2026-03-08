@@ -1,8 +1,17 @@
 // Search Service — localStorage-backed mock for recent & saved searches
-// TODO (Phase 13): Add global search across all lists/tasks via API
+import { taskService } from './taskService';
+import type { Task } from '../types/task';
 
 const RECENT_SEARCHES_KEY = 'hayah_recent_searches';
+const SAVED_SEARCHES_KEY = 'hayah_saved_searches';
 const MAX_RECENT_SEARCHES = 10;
+
+export interface SavedSearch {
+  id: string;
+  name: string;
+  query: string;
+  // future expansion: filters?: Record<string, any>;
+}
 
 export const searchService = {
   /**
@@ -50,6 +59,73 @@ export const searchService = {
     localStorage.removeItem(RECENT_SEARCHES_KEY);
   },
 
-  // TODO (Phase 13): savedSearches CRUD
-  // TODO (Phase 13): searchTasks(query, filters?) — global cross-list search
+  /**
+   * Get saved searches
+   */
+  getSavedSearches(): SavedSearch[] {
+    try {
+      const stored = localStorage.getItem(SAVED_SEARCHES_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * Save a new search configuration
+   */
+  saveSearch(name: string, query: string): SavedSearch {
+    const saved = searchService.getSavedSearches();
+    const newSaved: SavedSearch = {
+      id: `save-${Date.now()}`,
+      name,
+      query
+    };
+    saved.push(newSaved);
+    localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(saved));
+    return newSaved;
+  },
+
+  /**
+   * Delete a saved search
+   */
+  deleteSavedSearch(id: string): void {
+    const saved = searchService.getSavedSearches();
+    const filtered = saved.filter(s => s.id !== id);
+    localStorage.setItem(SAVED_SEARCHES_KEY, JSON.stringify(filtered));
+  },
+
+  /**
+   * Global cross-list task search
+   */
+  searchTasks: async (
+    query: string,
+    filters?: { assignee?: string; status?: string }
+  ): Promise<Task[]> => {
+    // Artificial mock delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Fallback: get all tasks. If backend was real, this is a database LIKE / text query.
+    let allTasks = await taskService.getAllTasks();
+
+    const q = query.trim().toLowerCase();
+
+    if (q) {
+      allTasks = allTasks.filter(task => {
+        const matchTitle = task.title.toLowerCase().includes(q);
+        const matchDesc = task.description?.toLowerCase().includes(q);
+        return matchTitle || matchDesc;
+      });
+    }
+
+    if (filters?.assignee) {
+      allTasks = allTasks.filter(t => t.assignees?.includes(filters.assignee!));
+    }
+
+    if (filters?.status) {
+      allTasks = allTasks.filter(t => t.status === filters.status);
+    }
+
+    return allTasks;
+  }
 };

@@ -10,6 +10,7 @@ import { VerifyEmailPage } from './pages/VerifyEmailPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ListView } from './pages/ListView'
+import { SearchResultsPage } from './pages/SearchResultsPage'
 import { MainLayout } from './layouts/MainLayout'
 import { LiveCursors } from './components/LiveCursors'
 
@@ -55,6 +56,7 @@ function App() {
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/dashboard/list/:listId" element={<ListView />} />
+          <Route path="/search" element={<SearchResultsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>
