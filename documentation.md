@@ -1945,3 +1945,63 @@ According to `FRONTEND_TODO.md`, all Phase 14 expectations are met and establish
 - Bulk operations (edit, move, delete, export) via a floating actions bar with optimistic state updates.
 - All mock services (`exportService`, `importService`, `bulkOperationService`) follow the established simulation pattern with artificial delays.
 - TypeScript compilation passes cleanly with zero errors.
+
+---
+
+## Phase 15: Templates
+
+### 1. Objective
+
+Implement Phase 15: Templates as outlined in `FRONTEND_TODO.md`. This includes functionality for both List Templates and Task Templates, featuring UI components for selection, creation, saving, management, and previewing, integrated with mock API services and a dedicated Zustand store.
+
+### 2. Implementation Details
+
+#### 2.1. Type Definitions (`src/types/template.ts`)
+New types were established to support structured template data:
+- `ListTemplate`: Defines a reusable list with pre-defined columns (`TemplateColumn`), color, icon, and category.
+- `TaskTemplate`: Defines a reusable task with default priority, tags, and a checklist (`TemplateChecklistItem`).
+- `TemplateCategory`: Categorizes templates into 'project', 'personal', 'team', or 'custom'.
+
+#### 2.2. Service Layer (`src/services/templateService.ts`)
+A dedicated mock service was created to handle template-related API calls:
+- **Built-in Templates**: Provides 5 pre-defined list templates (Kanban, Bug Tracking, Content Calendar, Agile Sprint, Personal) and 5 task templates (Feature, Bug Fix, Meeting Notes, Content Review, Research) with Arabic localization.
+- **CRUD Operations**: Implements simulated endpoints for `getListTemplates`, `getTaskTemplates`, `createListFromTemplate`, `saveListAsTemplate`, `createTaskFromTemplate`, `saveTaskAsTemplate`, and `deleteTemplate` (for custom templates).
+- **Mock Behavior**: Follows the existing pattern of using artificial delays to simulate server responsiveness.
+
+#### 2.3. State Management (`src/store/useTemplateStore.ts`)
+A new Zustand store manages the global state for templates:
+- **Data Collections**: Stores fetched `listTemplates` and `taskTemplates`.
+- **Modal States**: Controls the visibility of `ListTemplatesModal` and `TaskTemplatesModal`.
+- **Actions**: Handles data fetching, template application (creation), and persistence (saving as template) with loading and error states.
+
+#### 2.4. UI Components
+
+##### ListTemplatesModal (`src/components/Templates/ListTemplatesModal.tsx`)
+A comprehensive modal for list template management:
+- **Template Gallery**: Displays available templates in a grid, filtered by category.
+- **Preview System**: Selecting a template reveals its column structure and details.
+- **Creation Flow**: Allows users to specify a list name and create a new list from the selected template.
+- **"Save as Template" Tab**: Enables users to save the current list as a reusable template with a name and description.
+
+##### TaskTemplatesModal (`src/components/Templates/TaskTemplatesModal.tsx`)
+A dedicated modal for task template management:
+- **Browse Grid**: Shows task templates with metadata (priority, tags, checklist summary).
+- **Expandable Preview**: Clicking a template reveals its full checklist.
+- **Creation Flow**: Single-click "Use" button to instantly create a task in the current column using the template's defaults.
+- **"Save as Template" Tab**: Allows saving the currently viewed task as a template.
+
+### 3. Integration & Wiring
+
+- **BoardToolbar**: Replaced simplified template triggers with dedicated "قوالب" (List Templates) and "مهمة من قالب" (Task from Template) buttons.
+- **KanbanBoard**: Integrated the `ListTemplatesModal` and `TaskTemplatesModal` components, wired to the `useTemplateStore` for centralized visibility control.
+- **List Navigation**: Wired the "Create List" flow in the sidebar to potentially trigger the template gallery (extending existing `openTemplatesModal` logic).
+
+### 4. Status
+
+All Phase 15 requirements are **completed**:
+- Full-featured Templates Gallery for Lists with preview and category filtering.
+- Reusable Task Templates with priority, tag, and checklist presets.
+- "Save as Template" functionality for both lists and tasks.
+- Unified Template Store and Service.
+- Clean TypeScript build and RTL/Arabic support verified.
+

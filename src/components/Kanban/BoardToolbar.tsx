@@ -1,4 +1,4 @@
-import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users, Download, Upload } from 'lucide-react';
+import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users, Download, Upload, FileStack } from 'lucide-react';
 import { SortDropdown, type SortOptions } from './SortDropdown';
 import { BulkActionsMenu } from './BulkActionsMenu';
 import { FilterPanel, type FilterOptions } from './FilterPanel';
@@ -46,6 +46,10 @@ interface BoardToolbarProps {
   // Export & Import modal triggers
   onExportClick: () => void;
   onImportClick: () => void;
+
+  // Templates
+  onListTemplatesClick: () => void;
+  onTaskTemplatesClick: () => void;
 }
 
 export function BoardToolbar({
@@ -77,6 +81,8 @@ export function BoardToolbar({
   activeMembers = [],
   onExportClick,
   onImportClick,
+  onListTemplatesClick,
+  onTaskTemplatesClick,
 }: BoardToolbarProps) {
   return (
     <div className="relative mb-4 px-2">
@@ -214,12 +220,30 @@ export function BoardToolbar({
             استيراد
           </button>
 
+          {/* Templates Button */}
+          <button
+            onClick={onListTemplatesClick}
+            className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <FileStack size={16} />
+            قوالب
+          </button>
+
           <button
             onClick={onAddColumn}
             className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
           >
             <Plus size={16} />
             إضافة عمود
+          </button>
+
+          {/* Add Task from Template */}
+          <button
+            onClick={onTaskTemplatesClick}
+            className="px-3 py-2 text-sm text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 border border-emerald-500/30 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <FileStack size={16} />
+            مهمة من قالب
           </button>
 
           <button

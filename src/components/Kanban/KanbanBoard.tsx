@@ -4,6 +4,7 @@ import { useColumnStore } from '../../store/useColumnStore';
 import { useTaskStore } from '../../store/useTaskStore';
 import { useViewStore } from '../../store/useViewStore';
 import { useListStore } from '../../store/useListStore';
+import { useTemplateStore } from '../../store/useTemplateStore';
 import { KanbanColumn } from './KanbanColumn';
 import { BoardToolbar } from './BoardToolbar';
 import { ShareListModal } from './ShareListModal';
@@ -11,6 +12,8 @@ import { TaskDetailModal } from '../Task/TaskDetailModal';
 import { ExportOptionsModal } from '../Export/ExportOptionsModal';
 import { ImportModal } from '../Import/ImportModal';
 import { BulkActionsBar } from './BulkActionsBar';
+import { ListTemplatesModal } from '../Templates/ListTemplatesModal';
+import { TaskTemplatesModal } from '../Templates/TaskTemplatesModal';
 import type { Task } from '../../types/task';
 
 interface KanbanBoardProps {
@@ -51,6 +54,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [debouncedFilteredTasks, setDebouncedFilteredTasks] = useState<Task[]>([]);
   const [localSearch, setLocalSearch] = useState('');
+
+  // Template store
+  const { openListTemplatesModal, openTaskTemplatesModal } = useTemplateStore();
 
   // Modal states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -236,6 +242,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         // Export & Import modal triggers
         onExportClick={() => setIsExportModalOpen(true)}
         onImportClick={() => setIsImportModalOpen(true)}
+        // Templates
+        onListTemplatesClick={() => openListTemplatesModal()}
+        onTaskTemplatesClick={() => openTaskTemplatesModal(listId, defaultStatus)}
       />
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -297,6 +306,19 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         onImportComplete={(count) => {
           handleImportComplete(count);
           // Refresh to pick up imported tasks
+          handleRefresh();
+        }}
+      />
+
+      {/* List Templates Modal */}
+      <ListTemplatesModal />
+
+      {/* Task Templates Modal */}
+      <TaskTemplatesModal
+        listId={listId}
+        defaultColumnId={defaultStatus}
+        onTaskCreated={(taskId) => {
+          console.log(`Task ${taskId} created from template`);
           handleRefresh();
         }}
       />
