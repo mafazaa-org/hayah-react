@@ -5,11 +5,12 @@ import {
   Users,
   Calendar,
   Tag,
-  Layers,
   X,
   Plus,
   Search,
+  RotateCcw
 } from 'lucide-react';
+import { useIterationStore } from '../../store/useIterationStore';
 
 interface TaskSidebarProps {
   task: TaskDetail;
@@ -25,10 +26,9 @@ const MOCK_USERS = [
 ];
 
 const MOCK_TAGS = ['عاجل', 'تصميم', 'برمجة', 'مراجعة', 'اختبار', 'توثيق', 'بحث'];
-const MOCK_ITERATIONS = ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Backlog'];
-
 export function TaskSidebar({ task }: TaskSidebarProps) {
   const { updateTaskField } = useTaskDetailStore();
+  const iterations = useIterationStore(state => state.iterations);
 
   // Assignees
   const [showAssigneeDD, setShowAssigneeDD] = useState(false);
@@ -272,8 +272,8 @@ export function TaskSidebar({ task }: TaskSidebarProps) {
       {/* Iteration */}
       <div className="space-y-2">
         <h4 className="text-xs font-semibold text-slate-400 flex items-center gap-1.5 uppercase tracking-wide">
-          <Layers size={12} />
-          الدورة / Sprint
+          <RotateCcw size={12} />
+          الدورة / Iteration
         </h4>
         <div className="relative">
           <button
@@ -286,26 +286,30 @@ export function TaskSidebar({ task }: TaskSidebarProps) {
             <div className="absolute top-full mt-1 right-0 left-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1">
               <button
                 onClick={() => {
-                  updateTaskField({ iterationName: undefined });
+                  updateTaskField({ iterationName: undefined, iterationId: undefined });
                   setShowIterDD(false);
                 }}
-                className="w-full px-3 py-1.5 text-sm text-right text-slate-500 hover:bg-slate-700"
+                className="w-full px-3 py-1.5 text-sm text-right text-slate-500 hover:bg-slate-700 border-b border-slate-700/50 mb-1"
               >
                 بدون دورة
               </button>
-              {MOCK_ITERATIONS.map((iter) => (
-                <button
-                  key={iter}
-                  onClick={() => {
-                    updateTaskField({ iterationName: iter });
-                    setShowIterDD(false);
-                  }}
-                  className={`w-full px-3 py-1.5 text-sm text-right hover:bg-slate-700 transition-colors ${task.iterationName === iter ? 'text-sky-400' : 'text-slate-300'
-                    }`}
-                >
-                  {iter}
-                </button>
-              ))}
+              {iterations.length > 0 ? (
+                iterations.map((iter) => (
+                  <button
+                    key={iter.id}
+                    onClick={() => {
+                      updateTaskField({ iterationName: iter.name, iterationId: iter.id });
+                      setShowIterDD(false);
+                    }}
+                    className={`w-full px-3 py-1.5 text-sm text-right hover:bg-slate-700 transition-colors ${task.iterationId === iter.id ? 'text-sky-400' : 'text-slate-300'
+                      }`}
+                  >
+                    {iter.name}
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-[10px] text-slate-500 text-center italic">لا توجد دورات متاحة</div>
+              )}
             </div>
           )}
         </div>

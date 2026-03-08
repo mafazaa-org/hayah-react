@@ -33,6 +33,10 @@ export interface Task {
    */
   iterationName?: string;
   /**
+   * ID of the iteration / sprint this task belongs to.
+   */
+  iterationId?: string;
+  /**
    * Number of file attachments linked to this task.
    */
   attachmentsCount?: number;

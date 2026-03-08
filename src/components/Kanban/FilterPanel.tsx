@@ -4,6 +4,7 @@ import type { Task } from '../../types/task';
 import type { Column } from '../../types/task';
 import { FilterPresetManager } from './FilterPresetManager';
 import { useCustomFieldStore } from '../../store/useCustomFieldStore';
+import { useIterationStore } from '../../store/useIterationStore';
 
 export interface FilterOptions {
   priorities: Array<Task['priority']>;
@@ -12,6 +13,10 @@ export interface FilterOptions {
   assignees: string[];
   hasAssignee: boolean | null;
   dueDateRange: 'overdue' | 'today' | 'week' | 'month' | null;
+  /**
+   * Filter by iteration ID.
+   */
+  iterations: string[];
   /**
    * Simple custom-field filters. For now this is a basic
    * key/value pair list that matches against Task.customFields.
@@ -85,6 +90,11 @@ function getActiveFilterChips(filters: FilterOptions, columns: Column[]): Array<
     const opt = DUE_DATE_OPTIONS.find(o => o.value === filters.dueDateRange);
     if (opt) chips.push({ key: 'dueDate', label: `الموعد: ${opt.label}` });
   }
+
+  filters.iterations.forEach(id => {
+    const iter = useIterationStore.getState().iterations.find(i => i.id === id);
+    if (iter) chips.push({ key: `iteration-${id}`, label: `الدورة: ${iter.name}` });
+  });
 
   if (filters.hasAssignee === true) {
     chips.push({ key: 'hasAssignee', label: 'لديه مسؤول' });
@@ -160,6 +170,13 @@ export function FilterPanel({
     setLocalFilters({ ...localFilters, tags: newTags });
   };
 
+  const toggleIteration = (iterationId: string) => {
+    const newIterations = localFilters.iterations.includes(iterationId)
+      ? localFilters.iterations.filter(id => id !== iterationId)
+      : [...localFilters.iterations, iterationId];
+    setLocalFilters({ ...localFilters, iterations: newIterations });
+  };
+
   const handleApply = () => {
     onFiltersChange(localFilters);
     onClose();
@@ -174,6 +191,7 @@ export function FilterPanel({
       hasAssignee: null,
       dueDateRange: null,
       customFields: [],
+      iterations: [],
       matchMode: 'AND'
     };
     setLocalFilters(emptyFilters);
@@ -200,6 +218,9 @@ export function FilterPanel({
       updated.dueDateRange = null;
     } else if (chipKey === 'hasAssignee') {
       updated.hasAssignee = null;
+    } else if (chipKey.startsWith('iteration-')) {
+      const val = chipKey.replace('iteration-', '');
+      updated.iterations = updated.iterations.filter(id => id !== val);
     } else if (chipKey.startsWith('custom-')) {
       const index = parseInt(chipKey.replace('custom-', ''), 10);
       if (!Number.isNaN(index)) {
@@ -380,6 +401,31 @@ export function FilterPanel({
                       className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
                     />
                     <span className="text-sm text-slate-300">{tag}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Iteration Filter */}
+          {useIterationStore.getState().iterations.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">الدورة (Iteration)</label>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {useIterationStore.getState().iterations.map(iter => (
+                  <label key={iter.id} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={localFilters.iterations.includes(iter.id)}
+                      onChange={() => toggleIteration(iter.id)}
+                      className="rounded border-slate-700 bg-slate-800 text-sky-500 focus:ring-sky-500"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-sm text-slate-300">{iter.name}</span>
+                      {iter.status === 'active' && (
+                        <span className="text-[10px] text-emerald-400 font-medium">نشطة حالياً</span>
+                      )}
+                    </div>
                   </label>
                 ))}
               </div>

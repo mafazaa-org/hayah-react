@@ -13,6 +13,8 @@ import { useTaskStore } from '../../store/useTaskStore';
 import { useTaskDetailStore } from '../../store/useTaskDetailStore';
 import { usePresenceStore } from '../../store/usePresenceStore';
 import { useCustomFieldStore } from '../../store/useCustomFieldStore';
+import { useIterationStore } from '../../store/useIterationStore';
+import { RotateCcw } from 'lucide-react';
 
 interface TaskCardProps {
   task: Task;
@@ -27,6 +29,10 @@ export function TaskCard({ task, index }: TaskCardProps) {
   const openTaskDetail = useTaskDetailStore(state => state.openTaskDetail);
   const onlineUsers = usePresenceStore(state => state.onlineUsers);
   const fields = useCustomFieldStore(state => state.fields);
+  const iterations = useIterationStore(state => state.iterations);
+
+  const assignedIteration = iterations.find(it => it.id === task.iterationId);
+  const iterationDisplayName = assignedIteration?.name || task.iterationName;
 
   const highlightText = (text: string) => {
     const query = searchQuery.trim();
@@ -91,9 +97,13 @@ export function TaskCard({ task, index }: TaskCardProps) {
               className="h-1 flex-1 rounded-full mr-2"
               style={{ backgroundColor: priorityColor }}
             />
-            {task.iterationName && (
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-sky-500/15 text-[10px] text-sky-300 border border-sky-500/30">
-                {task.iterationName}
+            {iterationDisplayName && (
+              <span 
+                className="ml-2 px-2 py-0.5 rounded-full bg-sky-500/15 text-[10px] text-sky-400 border border-sky-500/30 flex items-center gap-1 shrink-0"
+                title="الدورة"
+              >
+                <RotateCcw size={10} />
+                <span className="truncate max-w-[80px]">{iterationDisplayName}</span>
               </span>
             )}
             {/* Task card context menu (minimal) */}

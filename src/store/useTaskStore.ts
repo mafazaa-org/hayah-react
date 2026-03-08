@@ -43,6 +43,7 @@ interface TaskState {
   setSearchQuery: (query: string) => void;
   clearSearch: () => void;
   clearFilters: () => void;
+  setIterationFilter: (iterationIds: string[]) => void;
   hasActiveFilters: () => boolean;
 
   // Selection actions
@@ -83,6 +84,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     hasAssignee: null,
     dueDateRange: null,
     customFields: [],
+    iterations: [],
     matchMode: 'AND'
   },
   sort: {
@@ -240,9 +242,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         hasAssignee: null,
         dueDateRange: null,
         customFields: [],
+        iterations: [],
         matchMode: 'AND'
       }
     });
+  },
+
+  setIterationFilter: (iterationIds: string[]) => {
+    set(state => ({
+      filters: { ...state.filters, iterations: iterationIds }
+    }));
   },
 
   hasActiveFilters: () => {
@@ -251,6 +260,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       filters.tags.length > 0 ||
       filters.statuses.length > 0 ||
       filters.assignees.length > 0 ||
+      filters.iterations.length > 0 ||
       filters.hasAssignee !== null ||
       filters.dueDateRange !== null ||
       filters.customFields.length > 0;
@@ -425,6 +435,12 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           return String(value).toLowerCase().includes(cf.value.toLowerCase());
         });
         predicates.push(customMatch);
+      }
+
+      // Iteration Filter
+      if (filters.iterations.length > 0) {
+        const matchesIteration = filters.iterations.includes(task.iterationId || '');
+        predicates.push(matchesIteration);
       }
 
       // If there are no active predicates, the task is included

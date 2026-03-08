@@ -16,6 +16,8 @@ import { ListTemplatesModal } from '../Templates/ListTemplatesModal';
 import { TaskTemplatesModal } from '../Templates/TaskTemplatesModal';
 import { useCustomFieldStore } from '../../store/useCustomFieldStore';
 import { CustomFieldManagerModal } from '../CustomFields/CustomFieldManagerModal';
+import { IterationManagerModal } from '../Iterations/IterationManagerModal';
+import { useIterationStore } from '../../store/useIterationStore';
 import type { Task } from '../../types/task';
 
 interface KanbanBoardProps {
@@ -62,6 +64,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
 
   // Custom Field Store
   const { openManagerModal: openCustomFieldsModal } = useCustomFieldStore();
+
+  // Iteration Store
+  const { openManagerModal: openIterationModal } = useIterationStore();
 
   // Modal states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -115,8 +120,8 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
       }
       if (sortBy && sortDirection) {
         setSort({
-          field: sortBy as any,
-          direction: sortDirection
+          field: sortBy as unknown as any,
+          direction: sortDirection as 'asc' | 'desc'
         });
       }
     }
@@ -130,9 +135,10 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
   const handleSearchChange = (value: string) => {
     setLocalSearch(value);
     const trimmed = value.trimStart();
-    // Debounce updates to store-level searchQuery
-    window.clearTimeout((handleSearchChange as any)._timeout);
-    (handleSearchChange as any)._timeout = window.setTimeout(() => {
+    
+    const self = handleSearchChange as unknown as { _timeout?: number };
+    if (self._timeout) window.clearTimeout(self._timeout);
+    self._timeout = window.setTimeout(() => {
       setSearchQuery(trimmed);
     }, 250);
   };
@@ -252,6 +258,8 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         onTaskTemplatesClick={() => openTaskTemplatesModal(listId, defaultStatus)}
         // Custom Fields
         onCustomFieldsClick={() => openCustomFieldsModal()}
+        // Iterations
+        onIterationsClick={() => openIterationModal()}
       />
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -332,6 +340,7 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
 
       {/* Custom Field Manager Modal */}
       <CustomFieldManagerModal />
+      <IterationManagerModal />
     </div>
   );
 }

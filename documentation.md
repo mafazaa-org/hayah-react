@@ -2072,3 +2072,57 @@ All Phase 16 requirements are **completed**:
 - Full RTL and Arabic support across all management and editing interfaces.
 - clean TypeScript compilation verified.
 
+
+---
+
+## Phase 17: Iterations/Sprints
+
+### 1. Objective
+
+Implement an Iteration (Sprint) management system to allow teams to group tasks into time-boxed cycles, track progress, and focus on specific goals within the Kanban framework.
+
+### 2. Core Architecture
+
+#### 2.1. Type System (`src/types/iteration.ts`)
+Defined the core entities for iteration management:
+- **`IterationStatus`**: Supports `planned`, `active`, and `completed`.
+- **`Iteration`**: Contains `id`, `name`, `goal`, `startDate`, `endDate`, `status`, and `listId`.
+- **`IterationStats`**: (Planned) Structure for tracking total/completed tasks within an iteration.
+
+#### 2.2. Service Layer (`src/services/iterationService.ts`)
+A service layer handling the lifecycle of iterations:
+- **Mock Data**: Initial "Sprint 1" and "Sprint 2" data for immediate testing.
+- **CRUD Operations**: Methods for fetching, creating, updating, and deleting iterations specific to a list.
+
+#### 2.3. State Management (`src/store/useIterationStore.ts`)
+A Zustand store for centralized iteration state:
+- **State**: Tracks `iterations`, loading states, and the visibility of the Iteration Manager.
+- **Actions**: Atomic CRUD operations with localized error handling and optimistic updates.
+- **Selects**: Helpers like `getActiveIteration` for quick context retrieval.
+
+### 3. UI and Integration
+
+#### 3.1. Iteration Manager (`src/components/Iterations/IterationManagerModal.tsx`)
+A centralized management modal accessible from the Board Toolbar:
+- **List View**: Displays all iterations for the current list with status badges and dates.
+- **Form Editor**: Type-safe form for creating/editing name, goal, dates, and status.
+- **Arabic Localization**: Full RTL support for date pickers and status labels.
+
+#### 3.2. Task Integration
+Connecting tasks to the Formal Sprint system:
+- **`Task` Type Update**: Added `iterationId` to link tasks to specific iterations.
+- **Task Detail Sidebar (`TaskSidebar.tsx`)**: Replaced mock strings with a real iteration selector that syncs `iterationId` and `iterationName`.
+- **Kanban Card (`TaskCard.tsx`)**: Added a dynamic iteration badge that reflects the assigned sprint, using the `RotateCcw` icon for visual consistency.
+
+#### 3.3. Project-Wide Integration
+- **Board Toolbar**: Added a dedicated "Iterations" (الدورات) action button.
+- **Discovery & Filtering**: Extended the `FilterPanel` and `useTaskStore` to support filtering the entire board by one or more iterations.
+
+### 4. Status
+
+All Phase 17 requirements are **completed**:
+- Formal Iteration/Sprint entity with full CRUD.
+- Management UI integrated into the Kanban board.
+- Task assignment and visual badging implemented.
+- Iteration-based filtering functional in the board view.
+- Clean TypeScript compilation and RTL/Arabic support verified.

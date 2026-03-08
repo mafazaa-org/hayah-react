@@ -1,4 +1,4 @@
-import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users, Download, Upload, FileStack, Settings2 } from 'lucide-react';
+import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users, Download, Upload, FileStack, Settings2, RotateCcw } from 'lucide-react';
 import { SortDropdown, type SortOptions } from './SortDropdown';
 import { BulkActionsMenu } from './BulkActionsMenu';
 import { FilterPanel, type FilterOptions } from './FilterPanel';
@@ -51,6 +51,7 @@ interface BoardToolbarProps {
   onListTemplatesClick: () => void;
   onTaskTemplatesClick: () => void;
   onCustomFieldsClick: () => void;
+  onIterationsClick: () => void;
 }
 
 export function BoardToolbar({
@@ -85,6 +86,7 @@ export function BoardToolbar({
   onListTemplatesClick,
   onTaskTemplatesClick,
   onCustomFieldsClick,
+  onIterationsClick,
 }: BoardToolbarProps) {
   return (
     <div className="relative mb-4 px-2">
@@ -222,13 +224,22 @@ export function BoardToolbar({
             استيراد
           </button>
 
-          {/* Custom Fields Button */}
           <button
             onClick={onCustomFieldsClick}
             className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
           >
             <Settings2 size={16} />
             الحقول
+          </button>
+
+          {/* Iterations Button */}
+          <button
+            onClick={onIterationsClick}
+            className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
+            title="إدارة الدورات / Sprints"
+          >
+            <RotateCcw size={16} />
+            الدورات
           </button>
 
           {/* Templates Button */}
