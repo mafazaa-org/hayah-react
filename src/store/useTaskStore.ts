@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Task } from '../types/task';
 import { taskService } from '../services/taskService';
+import { bulkOperationService, type BulkEditPayload } from '../services/bulkOperationService';
 import type { FilterOptions } from '../components/Kanban/FilterPanel';
 import type { SortOptions } from '../components/Kanban/SortDropdown';
 import { socketService } from '../services/socketService';
@@ -50,6 +51,9 @@ interface TaskState {
   clearSelection: () => void;
   toggleSelectionMode: () => void;
   bulkDeleteTasks: () => Promise<void>;
+  bulkEditTasks: (payload: BulkEditPayload) => Promise<void>;
+  bulkMoveTasks: (targetStatus: string) => Promise<void>;
+  addImportedTasks: (tasks: Task[]) => void;
 
   // Utility
   getTasksByColumn: (columnId: string) => Task[];
@@ -298,6 +302,54 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       console.error('Failed to delete tasks:', error);
       set({ error: 'فشل حذف المهام', isLoading: false });
     }
+  },
+
+  bulkEditTasks: async (payload: BulkEditPayload) => {
+    const { selectedTaskIds } = get();
+    const taskIds = Array.from(selectedTaskIds);
+    // Optimistic update
+    set(state => ({
+      tasks: state.tasks.map(task =>
+        selectedTaskIds.has(task.id)
+          ? { ...task, ...payload, updatedAt: new Date().toISOString() }
+          : task
+      ),
+      selectedTaskIds: new Set(),
+      isSelectionMode: false,
+    }));
+    try {
+      await bulkOperationService.bulkEdit(taskIds, payload);
+    } catch (error) {
+      console.error('Failed to bulk edit tasks:', error);
+      set({ error: 'فشل تعديل المهام' });
+    }
+  },
+
+  bulkMoveTasks: async (targetStatus: string) => {
+    const { selectedTaskIds } = get();
+    const taskIds = Array.from(selectedTaskIds);
+    // Optimistic update
+    set(state => ({
+      tasks: state.tasks.map(task =>
+        selectedTaskIds.has(task.id)
+          ? { ...task, status: targetStatus, updatedAt: new Date().toISOString() }
+          : task
+      ),
+      selectedTaskIds: new Set(),
+      isSelectionMode: false,
+    }));
+    try {
+      await bulkOperationService.bulkMove(taskIds, targetStatus);
+    } catch (error) {
+      console.error('Failed to bulk move tasks:', error);
+      set({ error: 'فشل نقل المهام' });
+    }
+  },
+
+  addImportedTasks: (newTasks: Task[]) => {
+    set(state => ({
+      tasks: [...state.tasks, ...newTasks],
+    }));
   },
 
   // Utility functions

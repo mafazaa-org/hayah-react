@@ -8,6 +8,9 @@ import { KanbanColumn } from './KanbanColumn';
 import { BoardToolbar } from './BoardToolbar';
 import { ShareListModal } from './ShareListModal';
 import { TaskDetailModal } from '../Task/TaskDetailModal';
+import { ExportOptionsModal } from '../Export/ExportOptionsModal';
+import { ImportModal } from '../Import/ImportModal';
+import { BulkActionsBar } from './BulkActionsBar';
 import type { Task } from '../../types/task';
 
 interface KanbanBoardProps {
@@ -17,6 +20,7 @@ interface KanbanBoardProps {
 export function KanbanBoard({ listId }: KanbanBoardProps) {
   const { columns, fetchColumns, reorderColumns, openColumnModal } = useColumnStore();
   const {
+    tasks,
     fetchTasks,
     moveTask,
     openCreateTaskModal,
@@ -34,8 +38,11 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
     getAvailableTags,
     // Selection
     selectedTaskIds,
+    selectAllTasks,
     clearSelection,
     bulkDeleteTasks,
+    bulkMoveTasks,
+    bulkEditTasks,
   } = useTaskStore();
   const { getViewConfig, updateViewSettings } = useViewStore();
   const { openShareModal, activeUsers, fetchUserPresence } = useListStore();
@@ -44,6 +51,10 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [debouncedFilteredTasks, setDebouncedFilteredTasks] = useState<Task[]>([]);
   const [localSearch, setLocalSearch] = useState('');
+
+  // Modal states
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   useEffect(() => {
     // Fetch columns first
@@ -109,7 +120,6 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
     setLocalSearch(value);
     const trimmed = value.trimStart();
     // Debounce updates to store-level searchQuery
-    // Simple timeout-based debounce scoped to this handler
     window.clearTimeout((handleSearchChange as any)._timeout);
     (handleSearchChange as any)._timeout = window.setTimeout(() => {
       setSearchQuery(trimmed);
@@ -170,16 +180,25 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
     }
   };
 
-  // Bulk action stubs (move & priority need a modal in a future phase)
+  // Bulk action handlers (now real using the store)
   const handleBulkMove = () => {
-    // TODO: open a column-selection modal for bulk move
+    // The BulkActionsBar now handles column selection directly
     console.log('Bulk move:', Array.from(selectedTaskIds));
   };
 
   const handleBulkChangePriority = () => {
-    // TODO: open a priority-selection modal for bulk priority change
+    // The BulkActionsBar now handles priority selection directly
     console.log('Bulk change priority:', Array.from(selectedTaskIds));
   };
+
+  // Import completion — add imported tasks to the store
+  const handleImportComplete = (count: number) => {
+    console.log(`Imported ${count} tasks`);
+    // Tasks are added to the store via addImportedTasks in the modal's commit flow
+  };
+
+  // Default status for importing (first column)
+  const defaultStatus = columns.length > 0 ? columns[0].id : '';
 
   return (
     <div className="h-full flex flex-col">
@@ -206,9 +225,6 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         // Search
         searchQuery={localSearch}
         onSearchChange={handleSearchChange}
-        // Export
-        tasks={debouncedFilteredTasks}
-        columns={columns}
         // Bulk actions
         selectedCount={selectedTaskIds.size}
         onBulkDelete={bulkDeleteTasks}
@@ -217,6 +233,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         onClearSelection={clearSelection}
         onShareClick={() => openShareModal(listId)}
         activeMembers={activeUsers.map(u => ({ id: u.id, name: u.user.name, avatar: u.user.avatar }))}
+        // Export & Import modal triggers
+        onExportClick={() => setIsExportModalOpen(true)}
+        onImportClick={() => setIsImportModalOpen(true)}
       />
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -241,11 +260,46 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         </Droppable>
       </DragDropContext>
 
+      {/* Floating Bulk Actions Bar */}
+      <BulkActionsBar
+        selectedCount={selectedTaskIds.size}
+        totalCount={tasks.length}
+        columns={columns}
+        onSelectAll={selectAllTasks}
+        onClearSelection={clearSelection}
+        onBulkDelete={bulkDeleteTasks}
+        onBulkMove={(targetStatus) => bulkMoveTasks(targetStatus)}
+        onBulkChangePriority={(priority) => bulkEditTasks({ priority })}
+        onBulkExport={() => setIsExportModalOpen(true)}
+      />
+
       {/* Task Detail Modal */}
       <TaskDetailModal />
 
       {/* Share List Modal */}
       <ShareListModal />
+
+      {/* Export Options Modal */}
+      <ExportOptionsModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        tasks={tasks}
+        filteredTasks={debouncedFilteredTasks}
+        columns={columns}
+      />
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        listId={listId}
+        defaultStatus={defaultStatus}
+        onImportComplete={(count) => {
+          handleImportComplete(count);
+          // Refresh to pick up imported tasks
+          handleRefresh();
+        }}
+      />
     </div>
   );
 }

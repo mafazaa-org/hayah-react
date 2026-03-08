@@ -1801,3 +1801,147 @@ According to `FRONTEND_TODO.md`, all Phase 13 expectations are met and establish
 - The Global Search bar inside the `Header` accurately links into the overarching Search framework.
 - The `CommandPalette` component enables quick actions and rapid multi-node traversal efficiently.
 - `searchService.ts` actively provides mocked payload results handling error and simulated loading states flawlessly.
+
+---
+
+## Phase 14: Export & Import ✅
+
+Phase 14 introduces comprehensive data portability and bulk-operation capabilities, enabling users to export task lists, import tasks from CSV files, and perform batch operations on multiple tasks simultaneously.
+
+### 1. Export Service & Export Options Modal
+
+#### Service Layer — `src/services/exportService.ts`
+
+- **Exports**:
+  - `ExportOptions` interface — specifies format (`json` | `csv`), whether to apply active filters, and which CSV columns to include.
+  - `ALL_CSV_COLUMNS` — array of all available column keys (`title`, `description`, `status`, `priority`, `dueDate`, `tags`, `assignees`, `createdAt`).
+  - `exportService.exportTasks()` — async method that accepts tasks, columns, and options, then generates a file and triggers a browser download.
+- **CSV Generation**:
+  - Utilises a `CSV_COLUMN_MAP` lookup that maps each column key to an Arabic header string and an accessor function extracting the value from a `Task`.
+  - Escapes double-quotes inside cell values (`""` escaping).
+  - Prepends a UTF-8 BOM (`\ufeff`) for seamless Excel/Arabic text compatibility.
+- **JSON Generation**:
+  - Exports a JSON object containing `exportDate`, the board's `columns`, and the full `tasks` array, pretty-printed with 2-space indentation.
+- **Download Helper** (`triggerDownload`):
+  - Creates a `Blob`, generates an object URL, appends a temporary `<a>` element to the DOM, programmatically clicks it, then cleans up both the element and the object URL.
+
+#### UI Component — `src/components/Export/ExportOptionsModal.tsx`
+
+- **Props**: `isOpen`, `onClose`, `tasks` (all tasks), `filteredTasks` (currently filtered), `columns`.
+- **Format Selector**: Two visual cards (CSV / JSON) with active-state highlighting (`border-sky-500 bg-sky-500/10`).
+- **Filter Toggle**: An iOS-style toggle switch that lets users export only the currently filtered subset. A live counter (`exportCount`) updates to reflect the number of tasks that will be exported.
+- **CSV Column Picker**: A 2-column checkbox grid where each column can be toggled on/off using `setSelectedColumns`. Each item displays an Arabic label from `COLUMN_LABELS` and a sky-blue checkmark when selected.
+- **Footer**: Cancel button and a primary "تصدير" button that disables while exporting or when no CSV columns are selected.
+
+### 2. Import Service & Import Modal
+
+#### Service Layer — `src/services/importService.ts`
+
+- **Types**:
+  - `ImportRow` — a parsed row with string fields for `title`, `description`, `status`, `priority`, `dueDate`, `tags`, plus an index signature for arbitrary extra keys.
+  - `ColumnMapping` — maps a `csvHeader` string to a `taskField` key or the sentinel value `'__skip__'`.
+  - `ImportPreview` — contains `headers`, `rows`, and `totalRows`.
+  - `ImportProgress` — tracks `processed`, `total`, and accumulated `errors`.
+- **Template Download** (`importService.downloadTemplate()`):
+  - Generates a sample CSV with Arabic headers (`العنوان`, `الوصف`, `الحالة`, `الأولوية`, `الموعد النهائي`, `الوسوم`) and one example row.
+  - Uses the same BOM + Blob + `<a>` click pattern as the export service.
+- **CSV Parsing** (`importService.parseCSV(file)`):
+  - Reads the file as text, splits into lines, and parses each line with a custom `parseCsvLine()` function that handles quoted fields (including escaped `""` within quotes).
+  - Auto-maps parsed headers to task fields using a bilingual `HEADER_TO_FIELD` lookup (Arabic headers + English fallbacks).
+  - Skips entirely empty rows (no title and no description).
+- **Auto-Detect Mapping** (`importService.autoDetectMapping(headers)`):
+  - Returns a `ColumnMapping[]` where each header is matched to its corresponding task field, defaulting to `'__skip__'` for unrecognised headers.
+- **Commit Import** (`importService.commitImport(listId, rows, defaultStatus, onProgress?)`):
+  - Iterates over rows with a simulated 120ms delay per row.
+  - Validates each row (title is required), constructing `Task` objects with generated IDs, timestamps, and a `validatePriority()` helper that constrains priority to `low | medium | high | critical` (defaults to `medium`).
+  - Reports progress via the optional `onProgress` callback after each row.
+
+#### UI Component — `src/components/Import/ImportModal.tsx`
+
+- **4-Step Wizard** using a `Step` union type (`'upload' | 'preview' | 'importing' | 'done'`):
+  1. **Upload Step**:
+     - Template download button at the top.
+     - Drag-and-drop zone with `onDragOver`, `onDragLeave`, and `onDrop` handlers. Visual feedback includes a sky-blue border and icon when dragging.
+     - Also supports click-to-browse via a hidden `<input type="file" accept=".csv">`.
+     - Displays file name and size after selection.
+  2. **Preview/Mapping Step**:
+     - Column mapping section: each CSV header is shown alongside a `<select>` dropdown for choosing the target task field or skipping the column.
+     - Data preview table: shows the first 5 rows in a responsive scrollable table with an indicator for remaining rows.
+  3. **Importing Step**:
+     - Centered spinner (`Loader2` with `animate-spin`).
+     - Progress bar (`bg-sky-500 rounded-full`) with percentage width driven by `progress.processed / progress.total`.
+     - Per-row errors displayed in amber text below the bar.
+  4. **Done Step**:
+     - Green checkmark (`CheckCircle2`) with the count of successfully imported tasks.
+     - Error summary count if any rows failed.
+- **Step Progress Dots**: A horizontal dot indicator at the top visualising the current step progression.
+- **State Management**: All wizard state (step, file, preview, mapping, progress, error, importedCount, isDragOver) is scoped inside the component and reset via `resetState()` on close.
+
+### 3. Bulk Operations Service & Bulk Actions Bar
+
+#### Service Layer — `src/services/bulkOperationService.ts`
+
+- **`BulkEditPayload`** interface: optional fields for `status`, `priority`, `assignees`, and `tags`.
+- Three async mock endpoints:
+  - `bulkEdit(taskIds, payload)` → returns `{ updated: string[] }`
+  - `bulkDelete(taskIds)` → returns `{ deleted: string[] }`
+  - `bulkMove(taskIds, targetStatus)` → returns `{ moved: string[] }`
+- Each simulates a 400ms network delay and logs the operation to the console.
+
+#### UI Component — `src/components/Kanban/BulkActionsBar.tsx`
+
+- **Floating Bottom Bar**: Fixed-position bar centered at the bottom of the viewport (`fixed bottom-6 left-1/2 -translate-x-1/2 z-50`) with a glassmorphism effect (`bg-slate-900/95 backdrop-blur-lg`).
+- **Visibility**: Only renders when `selectedCount > 0`.
+- **Selection Info**: Displays "{count} محدد من {total}" with sky-blue accent.
+- **Actions**:
+  - **Select All / Deselect**: Toggles between `CheckSquare` and `Square` icons depending on whether all tasks are selected.
+  - **Move to Column**: Opens an upward popup listing all board columns with their colour dots. Clicking a column calls `onBulkMove(col.id)`.
+  - **Change Priority**: Opens an upward popup with the four priority levels (`منخفضة`, `متوسطة`, `عالية`, `حرجة`), each with a coloured dot.
+  - **Export Selected**: Triggers the `ExportOptionsModal` via `onBulkExport`.
+  - **Delete**: Shows a confirmation dialog before calling `onBulkDelete`.
+  - **Close (×)**: Clears the selection.
+
+### 4. Store Updates — `src/store/useTaskStore.ts`
+
+Three new actions were added to the Zustand task store (imported `bulkOperationService` and `BulkEditPayload`):
+
+- **`bulkEditTasks(payload)`**: Optimistically updates all selected tasks with the provided payload (spreading `{ ...task, ...payload, updatedAt }`), clears selection, then calls `bulkOperationService.bulkEdit()`.
+- **`bulkMoveTasks(targetStatus)`**: Optimistically sets the `status` field of all selected tasks to the target column, clears selection, then calls `bulkOperationService.bulkMove()`.
+- **`addImportedTasks(newTasks)`**: Appends newly imported tasks to the `tasks` array (used for post-import state reconciliation).
+
+All three actions follow the optimistic update pattern: modify state first, then fire the async service call, rolling back or logging errors on failure.
+
+### 5. Integration — Board Toolbar & Kanban Board
+
+#### `src/components/Kanban/BoardToolbar.tsx`
+
+- Replaced the old inline `ExportMenu` component with two separate toolbar buttons:
+  - **تصدير (Export)**: `Download` icon, calls `onExportClick`.
+  - **استيراد (Import)**: `Upload` icon, calls `onImportClick`.
+- Removed the now-unnecessary `tasks` and `columns` props from the interface (export data is handled directly by the modal).
+
+#### `src/components/Kanban/KanbanBoard.tsx`
+
+- **New State**: `isExportModalOpen` and `isImportModalOpen` booleans.
+- **New Store Destructuring**: `tasks`, `selectAllTasks`, `bulkMoveTasks`, `bulkEditTasks`.
+- **BoardToolbar Integration**: Passes `onExportClick` and `onImportClick` callbacks.
+- **BulkActionsBar Integration**: Renders the floating bar with all column/priority/export/delete handlers wired to the store actions.
+- **ExportOptionsModal**: Rendered with `tasks`, `filteredTasks` (debounced), and `columns`.
+- **ImportModal**: Rendered with `listId`, `defaultStatus` (first column), and an `onImportComplete` callback that triggers a board refresh.
+
+### 6. Design Decisions
+
+- **Optimistic Updates**: All bulk operations update the local Zustand store immediately before the async service call completes, providing instant UI feedback. Errors are logged but do not roll back (consistent with the mock-first development strategy).
+- **Bilingual Header Detection**: The import service recognises both Arabic and English CSV headers, making it interoperable with exported files and externally prepared spreadsheets.
+- **UTF-8 BOM**: Both export and import template files prepend `\ufeff` to ensure correct Arabic text rendering in Microsoft Excel and other spreadsheet applications.
+- **Floating Bulk Bar vs. Inline Menu**: The old `BulkActionsMenu` (dropdown in the toolbar) remains for backward compatibility, but the new `BulkActionsBar` provides a more discoverable, always-visible experience when tasks are selected. The bar includes inline column/priority pickers instead of requiring separate modals.
+- **Wizard Pattern for Import**: A 4-step wizard (upload → preview → importing → done) was chosen over a single-step dialog to give users control over column mapping and a clear preview before committing, reducing errors.
+
+### 7. Summary of Phase 14 Status
+
+According to `FRONTEND_TODO.md`, all Phase 14 expectations are met and established as **completed**:
+- Export to JSON and CSV with configurable column selection and filter support.
+- Import from CSV with template download, drag-and-drop upload, auto-detected column mapping, data preview, and progress tracking.
+- Bulk operations (edit, move, delete, export) via a floating actions bar with optimistic state updates.
+- All mock services (`exportService`, `importService`, `bulkOperationService`) follow the established simulation pattern with artificial delays.
+- TypeScript compilation passes cleanly with zero errors.

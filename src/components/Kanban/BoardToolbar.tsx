@@ -1,9 +1,8 @@
-import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users } from 'lucide-react';
+import { RefreshCw, Plus, LayoutGrid, Filter, X, Search, Users, Download, Upload } from 'lucide-react';
 import { SortDropdown, type SortOptions } from './SortDropdown';
-import { ExportMenu } from './ExportMenu';
 import { BulkActionsMenu } from './BulkActionsMenu';
 import { FilterPanel, type FilterOptions } from './FilterPanel';
-import type { Task, Column } from '../../types/task';
+import type { Column } from '../../types/task';
 
 interface BoardToolbarProps {
   // Existing
@@ -33,10 +32,6 @@ interface BoardToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
 
-  // Export
-  tasks: Task[];
-  columns: Column[];
-
   // Bulk actions
   selectedCount: number;
   onBulkDelete: () => void;
@@ -47,6 +42,10 @@ interface BoardToolbarProps {
   // Sharing
   onShareClick: () => void;
   activeMembers?: Array<{ id: string; avatar?: string; name: string }>;
+
+  // Export & Import modal triggers
+  onExportClick: () => void;
+  onImportClick: () => void;
 }
 
 export function BoardToolbar({
@@ -69,15 +68,15 @@ export function BoardToolbar({
   onSortChange,
   searchQuery,
   onSearchChange,
-  tasks,
-  columns,
   selectedCount,
   onBulkDelete,
   onBulkMove,
   onBulkChangePriority,
   onClearSelection,
   onShareClick,
-  activeMembers = []
+  activeMembers = [],
+  onExportClick,
+  onImportClick,
 }: BoardToolbarProps) {
   return (
     <div className="relative mb-4 px-2">
@@ -197,8 +196,23 @@ export function BoardToolbar({
             مشاركة
           </button>
 
-          {/* Export Menu */}
-          <ExportMenu tasks={tasks} columns={columns} />
+          {/* Export Button */}
+          <button
+            onClick={onExportClick}
+            className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Download size={16} />
+            تصدير
+          </button>
+
+          {/* Import Button */}
+          <button
+            onClick={onImportClick}
+            className="px-3 py-2 text-sm text-slate-300 hover:text-slate-100 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Upload size={16} />
+            استيراد
+          </button>
 
           <button
             onClick={onAddColumn}
