@@ -2005,3 +2005,70 @@ All Phase 15 requirements are **completed**:
 - Unified Template Store and Service.
 - Clean TypeScript build and RTL/Arabic support verified.
 
+---
+
+## Phase 16: Custom Fields
+
+### 1. Objective
+
+Implement a structured Custom Field system that moves away from ad-hoc task-level properties to formal list-level definitions, providing consistent data types and management capabilities across the board.
+
+### 2. Core Architecture
+
+#### 2.1. Type System (`src/types/customField.ts`)
+Established a robust set of interfaces to define the field definitions and their associated data:
+- **`CustomFieldType`**: Supports `text`, `number`, `date`, `select`, and `checkbox`.
+- **`CustomField`**: Defines the metadata for a field, including `id`, `name`, `type`, `options` (for select fields), and `showOnCard` preference.
+- **`CustomFieldOption`**: Structuring for dropdown/select choices.
+
+#### 2.2. Service Layer (`src/services/customFieldService.ts`)
+A mock service implementing the backend contract for field management:
+- **CRUD Operations**: Endpoints for creating, updating, deleting, and reordering field definitions.
+- **Data Persistence**: Uses a simulated storage with artificial delays to mimic real-world network latency.
+- **Initial Data**: Provided sample fields like "Budget" (Number), "Target Date" (Date), and "Audit Stage" (Select) for immediate functional testing.
+
+#### 2.3. State Management (`src/store/useCustomFieldStore.ts`)
+A dedicated Zustand store ensures reactive updates to field definitions across the UI:
+- **`fields`**: Central collection of all definitions for the current list.
+- **`isManagerModalOpen`**: Global state for the manager UI visibility.
+- **Actions**: Atomic actions for fetching all fields and performing CRUD, ensuring state consistency.
+
+### 3. UI and Integration
+
+#### 3.1. Management Interface (`src/components/CustomFields/CustomFieldManagerModal.tsx`)
+A new management center for list owners to:
+- Define new fields by choosing a name and type.
+- Configure "Select" options with a dedicated sub-editor.
+- Toggle visibility on Kanban cards via the "Show on card" setting.
+- Reorder or delete existing fields with safety confirmations.
+
+#### 3.2. Task Detail Integration (`src/components/Task/CustomFieldsSection.tsx`)
+The task detail view was refactored with "Type-Aware Editors":
+- **Dynamic Rendering**: Maps each field definition to a specialized React editor component.
+- **Types supported**:
+  - `Select`: Custom dropdown with option matching.
+  - `Checkbox`: Styled toggle switch with Arabic localization.
+  - `Date`: Native date picker reflecting the user's locale.
+  - `Number/Text`: Validated inputs for structured data entry.
+
+#### 3.3. Conditional Display (`src/components/Kanban/TaskCard.tsx`)
+Enhanced the card UI to respect user preferences:
+- Only fields with `showOnCard: true` are rendered in the compact card view.
+- Supports up to 3 fields on the front of the card to prevent clutter.
+- Handles type-specific display logic (e.g., showing icons for different field types).
+
+#### 3.4. Advanced Filtering (`src/components/Kanban/FilterPanel.tsx`)
+The filtering engine was upgraded to be "Definition-Aware":
+- Users now choose fields from a list of defined names rather than typing manual keys.
+- Input fields in the filter panel automatically switch to the appropriate type (e.g., a checkbox appears for a boolean custom field).
+- Filter chips in the toolbar display the human-readable field name instead of the internal ID.
+
+### 4. Status
+
+All Phase 16 requirements are **completed**:
+- Structured list-level field definitions with full CRUD.
+- Specialized editors for 5 distinct data types.
+- Adaptive filtering and display logic integrated into Kanban and Task Detail.
+- Full RTL and Arabic support across all management and editing interfaces.
+- clean TypeScript compilation verified.
+

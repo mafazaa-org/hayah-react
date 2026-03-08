@@ -3,6 +3,7 @@ import { Filter, X, Search } from 'lucide-react';
 import type { Task } from '../../types/task';
 import type { Column } from '../../types/task';
 import { FilterPresetManager } from './FilterPresetManager';
+import { useCustomFieldStore } from '../../store/useCustomFieldStore';
 
 export interface FilterOptions {
   priorities: Array<Task['priority']>;
@@ -94,9 +95,20 @@ function getActiveFilterChips(filters: FilterOptions, columns: Column[]): Array<
   // Custom field filters
   filters.customFields.forEach((cf, index) => {
     if (!cf.key || !cf.value) return;
+    const fieldDef = useCustomFieldStore.getState().fields.find(f => f.id === cf.key);
+    const fieldName = fieldDef ? fieldDef.name : cf.key;
+    
+    let displayValue = cf.value;
+    if (fieldDef?.type === 'checkbox') {
+      displayValue = cf.value === 'true' ? 'نعم' : 'لا';
+    } else if (fieldDef?.type === 'select') {
+      const option = fieldDef.options?.find(o => o.id === cf.value || o.value === cf.value);
+      if (option) displayValue = option.value;
+    }
+
     chips.push({
       key: `custom-${index}`,
-      label: `حقل مخصص: ${cf.key} = ${cf.value}`
+      label: `حقل مخصص: ${fieldName} = ${displayValue}`
     });
   });
 
@@ -378,46 +390,88 @@ export function FilterPanel({
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-2">الحقول المخصصة</label>
             <p className="text-xs text-slate-500 mb-2">
-              أضف شروط تصفية بسيطة حسب الحقول المخصصة المرتبطة بالمهمة.
+              تصفية المهام بناءً على الحقول المخصصة المعرّفة في هذه القائمة.
             </p>
             <div className="space-y-2">
-              {localFilters.customFields.map((cf, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={cf.key}
-                    onChange={(e) => {
-                      const updated = [...localFilters.customFields];
-                      updated[index] = { ...updated[index], key: e.target.value };
-                      setLocalFilters({ ...localFilters, customFields: updated });
-                    }}
-                    placeholder="اسم الحقل"
-                    className="flex-1 px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  />
-                  <span className="text-slate-500 text-xs">=</span>
-                  <input
-                    type="text"
-                    value={cf.value}
-                    onChange={(e) => {
-                      const updated = [...localFilters.customFields];
-                      updated[index] = { ...updated[index], value: e.target.value };
-                      setLocalFilters({ ...localFilters, customFields: updated });
-                    }}
-                    placeholder="القيمة"
-                    className="flex-1 px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  />
-                  <button
-                    onClick={() => {
-                      const updated = localFilters.customFields.filter((_, i) => i !== index);
-                      setLocalFilters({ ...localFilters, customFields: updated });
-                    }}
-                    className="p-1 text-slate-500 hover:text-red-400 transition-colors"
-                    aria-label="إزالة شرط الحقل المخصص"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
+              {localFilters.customFields.map((cf, index) => {
+                const fieldDef = useCustomFieldStore.getState().fields.find(f => f.id === cf.key);
+                
+                return (
+                  <div key={index} className="flex items-center gap-2">
+                    <select
+                      value={cf.key}
+                      onChange={(e) => {
+                        const updated = [...localFilters.customFields];
+                        updated[index] = { ...updated[index], key: e.target.value, value: '' };
+                        setLocalFilters({ ...localFilters, customFields: updated });
+                      }}
+                      className="w-1/3 px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    >
+                      <option value="">-- اختر حقل --</option>
+                      {useCustomFieldStore.getState().fields.map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                    
+                    <span className="text-slate-500 text-xs">=</span>
+                    
+                    {fieldDef?.type === 'checkbox' ? (
+                      <select
+                        value={cf.value}
+                        onChange={(e) => {
+                          const updated = [...localFilters.customFields];
+                          updated[index] = { ...updated[index], value: e.target.value };
+                          setLocalFilters({ ...localFilters, customFields: updated });
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="">الكل</option>
+                        <option value="true">نعم</option>
+                        <option value="false">لا</option>
+                      </select>
+                    ) : fieldDef?.type === 'select' ? (
+                      <select
+                        value={cf.value}
+                        onChange={(e) => {
+                          const updated = [...localFilters.customFields];
+                          updated[index] = { ...updated[index], value: e.target.value };
+                          setLocalFilters({ ...localFilters, customFields: updated });
+                        }}
+                        className="flex-1 px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      >
+                        <option value="">كل الخيارات</option>
+                        {fieldDef.options?.map(opt => (
+                          <option key={opt.id} value={opt.id}>{opt.value}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={fieldDef?.type === 'number' ? 'number' : fieldDef?.type === 'date' ? 'date' : 'text'}
+                        value={cf.value}
+                        onChange={(e) => {
+                          const updated = [...localFilters.customFields];
+                          updated[index] = { ...updated[index], value: e.target.value };
+                          setLocalFilters({ ...localFilters, customFields: updated });
+                        }}
+                        placeholder="القيمة"
+                        className="flex-1 px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = localFilters.customFields.filter((_, i) => i !== index);
+                        setLocalFilters({ ...localFilters, customFields: updated });
+                      }}
+                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      aria-label="إزالة شرط الحقل المخصص"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                );
+              })}
               <button
                 type="button"
                 onClick={() =>

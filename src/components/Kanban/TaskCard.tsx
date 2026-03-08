@@ -12,6 +12,7 @@ import {
 import { useTaskStore } from '../../store/useTaskStore';
 import { useTaskDetailStore } from '../../store/useTaskDetailStore';
 import { usePresenceStore } from '../../store/usePresenceStore';
+import { useCustomFieldStore } from '../../store/useCustomFieldStore';
 
 interface TaskCardProps {
   task: Task;
@@ -25,6 +26,7 @@ export function TaskCard({ task, index }: TaskCardProps) {
   const deleteTask = useTaskStore(state => state.deleteTask);
   const openTaskDetail = useTaskDetailStore(state => state.openTaskDetail);
   const onlineUsers = usePresenceStore(state => state.onlineUsers);
+  const fields = useCustomFieldStore(state => state.fields);
 
   const highlightText = (text: string) => {
     const query = searchQuery.trim();
@@ -159,20 +161,33 @@ export function TaskCard({ task, index }: TaskCardProps) {
             </div>
           )}
 
-          {/* Custom fields (compact view of first two) */}
+          {/* Custom fields (filtered by showOnCard) */}
           {task.customFields && Object.keys(task.customFields).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
-              {Object.entries(task.customFields)
-                .slice(0, 2)
-                .map(([key, value]) => (
-                  <span
-                    key={key}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-slate-700/80 text-slate-200"
-                  >
-                    <span className="text-slate-400">{key}:</span>
-                    <span className="truncate max-w-[80px]">{String(value)}</span>
-                  </span>
-                ))}
+              {fields
+                .filter(f => f.showOnCard && task.customFields?.[f.id] !== undefined)
+                .slice(0, 3)
+                .map((field) => {
+                  const value = task.customFields![field.id];
+                  let displayValue = String(value);
+                  
+                  if (field.type === 'select') {
+                    const option = field.options?.find(o => o.id === value || o.value === value);
+                    if (option) displayValue = option.value;
+                  } else if (field.type === 'checkbox') {
+                    displayValue = value ? 'نعم' : 'لا';
+                  }
+
+                  return (
+                    <span
+                      key={field.id}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-slate-700/80 text-slate-200 border border-slate-600/30"
+                    >
+                      <span className="text-slate-400">{field.name}:</span>
+                      <span className="truncate max-w-[80px]">{displayValue}</span>
+                    </span>
+                  );
+                })}
             </div>
           )}
 

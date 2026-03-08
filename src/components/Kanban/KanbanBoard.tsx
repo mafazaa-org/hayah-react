@@ -14,6 +14,8 @@ import { ImportModal } from '../Import/ImportModal';
 import { BulkActionsBar } from './BulkActionsBar';
 import { ListTemplatesModal } from '../Templates/ListTemplatesModal';
 import { TaskTemplatesModal } from '../Templates/TaskTemplatesModal';
+import { useCustomFieldStore } from '../../store/useCustomFieldStore';
+import { CustomFieldManagerModal } from '../CustomFields/CustomFieldManagerModal';
 import type { Task } from '../../types/task';
 
 interface KanbanBoardProps {
@@ -57,6 +59,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
 
   // Template store
   const { openListTemplatesModal, openTaskTemplatesModal } = useTemplateStore();
+
+  // Custom Field Store
+  const { openManagerModal: openCustomFieldsModal } = useCustomFieldStore();
 
   // Modal states
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
@@ -245,6 +250,8 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         // Templates
         onListTemplatesClick={() => openListTemplatesModal()}
         onTaskTemplatesClick={() => openTaskTemplatesModal(listId, defaultStatus)}
+        // Custom Fields
+        onCustomFieldsClick={() => openCustomFieldsModal()}
       />
 
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -322,6 +329,9 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
           handleRefresh();
         }}
       />
+
+      {/* Custom Field Manager Modal */}
+      <CustomFieldManagerModal />
     </div>
   );
 }
