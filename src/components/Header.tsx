@@ -68,8 +68,15 @@ export function Header() {
       {/* Right Side (Logo & Nav) - RTL Context */}
       <div className="flex items-center gap-4">
         {/* Logo area */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
-          <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-lg">
+        <div
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => navigate('/')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/'); }}
+          aria-label="العودة للصفحة الرئيسية"
+        >
+          <div className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-lg bg-blue-600">
             ح
           </div>
           <span className="text-xl font-bold bg-linear-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent hidden sm:block">
@@ -78,15 +85,15 @@ export function Header() {
         </div>
 
         {/* Workspace Switcher (Mock) */}
-        <div className="hidden md:flex items-center gap-2 px-2 py-1 rounded hover:bg-white/5 cursor-pointer text-slate-300 transition-colors">
+        <button className="hidden md:flex items-center gap-2 px-2 py-1 rounded hover:bg-white/5 cursor-pointer text-slate-300 transition-colors" aria-haspopup="menu" aria-expanded="false">
           <span className="text-sm font-medium">مساحة العمل</span>
-          <ChevronDown size={14} />
-        </div>
+          <ChevronDown size={14} aria-hidden="true" />
+        </button>
 
-        <div className="h-6 w-px bg-white/10 hidden md:block" />
+        <div className="h-6 w-px bg-white/10 hidden md:block" aria-hidden="true" />
 
         {/* Primary Nav Links */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="hidden lg:flex items-center gap-1" aria-label="التنقل الأساسي">
           {['الأخيرة', 'المفضلة', 'القوالب'].map((item) => (
             <button key={item} className="px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 rounded transition-colors">
               {item}
@@ -101,12 +108,13 @@ export function Header() {
 
       {/* Center Search */}
       <div className="flex-1 max-w-xl px-4 hidden sm:block">
-        <div className="relative group">
+        <div className="relative group" role="search">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors" size={18} />
           <input
             type="text"
             placeholder="بحث عالمي عن المهام..."
             value={searchTerm}
+            aria-label="بحث عالمي عن المهام"
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => {
@@ -124,7 +132,7 @@ export function Header() {
 
           {/* Recent searches dropdown */}
           {isSearchFocused && recentSearches.length > 0 && (
-            <div className="absolute mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 z-40">
+            <div className="absolute mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 z-40" role="listbox" aria-label="عمليات البحث الأخيرة">
               <div className="px-3 py-1.5 text-xs text-slate-500 flex items-center justify-between">
                 <span>عمليات البحث الأخيرة</span>
                 <button
@@ -159,21 +167,24 @@ export function Header() {
       {/* Left Side (User Actions) */}
       <div className="flex items-center gap-2">
         {/* Mobile Create Button */}
-        <button className="lg:hidden p-2 text-slate-300 hover:bg-white/5 rounded-full">
-          <Plus size={20} />
+        <button className="lg:hidden p-2 text-slate-300 hover:bg-white/5 rounded-full" aria-label="إنشاء جديد">
+          <Plus size={20} aria-hidden="true" />
         </button>
 
         <NotificationDropdown />
 
-        <button className="p-2 text-slate-300 hover:bg-white/5 rounded-full hidden sm:block">
-          <HelpCircle size={20} />
+        <button className="p-2 text-slate-300 hover:bg-white/5 rounded-full hidden sm:block" aria-label="المساعدة والدعم">
+          <HelpCircle size={20} aria-hidden="true" />
         </button>
 
         {/* Profile Dropdown */}
         <div className="relative" ref={profileRef}>
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-500 to-purple-600 p-0.5 ml-1 ring-2 ring-transparent hover:ring-blue-500/50 transition-all"
+            className="w-8 h-8 rounded-full bg-linear-to-tr from-blue-500 to-purple-600 p-0.5 ml-1 ring-2 ring-transparent hover:ring-blue-500/50 transition-all flex items-center justify-center"
+            aria-haspopup="menu"
+            aria-expanded={isProfileOpen}
+            aria-label="قائمة المستخدم"
           >
             <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center overflow-hidden">
               <span className="text-xs font-bold text-white">م</span>
@@ -181,13 +192,18 @@ export function Header() {
           </button>
 
           {isProfileOpen && (
-            <div className="absolute left-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div
+              className="absolute left-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+              role="menu"
+              aria-orientation="vertical"
+            >
               <div className="px-4 py-3 border-b border-slate-800">
                 <p className="text-sm font-medium text-white">المستخدم الحالي</p>
                 <p className="text-xs text-slate-400 truncate">user@example.com</p>
               </div>
 
               <button
+                role="menuitem"
                 onClick={() => { setIsProfileOpen(false); navigate('/profile'); }}
                 className="w-full text-right px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 flex items-center gap-2"
               >
@@ -196,6 +212,7 @@ export function Header() {
               </button>
 
               <button
+                role="menuitem"
                 onClick={() => { setIsProfileOpen(false); navigate('/settings'); }}
                 className="w-full text-right px-4 py-2 text-sm text-slate-300 hover:bg-slate-800 flex items-center gap-2"
               >
@@ -203,9 +220,10 @@ export function Header() {
                 الإعدادات
               </button>
 
-              <div className="h-px bg-slate-800 my-1" />
+              <div className="h-px bg-slate-800 my-1" role="separator" />
 
               <button
+                role="menuitem"
                 onClick={handleLogout}
                 className="w-full text-right px-4 py-2 text-sm text-red-400 hover:bg-red-950/30 flex items-center gap-2"
               >

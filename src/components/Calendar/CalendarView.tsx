@@ -34,7 +34,7 @@ export function CalendarView({ listId }: CalendarViewProps) {
   const [mode, setMode] = useState<CalendarMode>('month');
   const [currentDate, setCurrentDate] = useState(() => startOfDay(new Date()));
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Compute range for current mode
@@ -199,10 +199,10 @@ export function CalendarView({ listId }: CalendarViewProps) {
       task.priority === 'critical'
         ? 'bg-red-500/30 text-red-100 border-red-500/40'
         : task.priority === 'high'
-        ? 'bg-amber-500/30 text-amber-100 border-amber-500/40'
-        : task.priority === 'medium'
-        ? 'bg-sky-500/30 text-sky-100 border-sky-500/40'
-        : 'bg-slate-700/60 text-slate-100 border-slate-600/60';
+          ? 'bg-amber-500/30 text-amber-100 border-amber-500/40'
+          : task.priority === 'medium'
+            ? 'bg-sky-500/30 text-sky-100 border-sky-500/40'
+            : 'bg-slate-700/60 text-slate-100 border-slate-600/60';
 
     return (
       <div
@@ -253,11 +253,10 @@ export function CalendarView({ listId }: CalendarViewProps) {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`px-3 py-1 rounded-full ${
-                  mode === m
+                className={`px-3 py-1 rounded-full ${mode === m
                     ? 'bg-sky-600 text-white'
                     : 'text-slate-300 hover:bg-slate-800'
-                }`}
+                  }`}
               >
                 {m === 'month' ? 'شهر' : m === 'week' ? 'أسبوع' : 'يوم'}
               </button>
@@ -339,9 +338,8 @@ export function CalendarView({ listId }: CalendarViewProps) {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span
-                      className={`text-[11px] ${
-                        isCurrentMonth ? 'text-slate-200' : 'text-slate-500'
-                      }`}
+                      className={`text-[11px] ${isCurrentMonth ? 'text-slate-200' : 'text-slate-500'
+                        }`}
                     >
                       {cell.date.getDate()}
                     </span>

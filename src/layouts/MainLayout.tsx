@@ -62,7 +62,9 @@ export function MainLayout() {
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
-        <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(prev => !prev)} />
+        <nav aria-label="الشريط الجانبي الرئيسي">
+          <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(prev => !prev)} />
+        </nav>
 
         {/* Sidebar toggle (desktop) */}
         <button
@@ -71,11 +73,13 @@ export function MainLayout() {
           className="hidden md:flex items-center justify-center w-5 h-10 absolute top-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-slate-400 hover:text-slate-200 transition-colors z-30"
           style={{ left: isSidebarOpen ? '16.1rem' : '0.25rem' }}
           title={isSidebarOpen ? 'إخفاء الشريط الجانبي' : 'إظهار الشريط الجانبي'}
+          aria-expanded={isSidebarOpen}
+          aria-label={isSidebarOpen ? 'إخفاء الشريط الجانبي' : 'إظهار الشريط الجانبي'}
         >
           {isSidebarOpen ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />}
         </button>
 
-        <main className="flex-1 overflow-auto bg-slate-950 relative w-full scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <main id="main-content" className="flex-1 overflow-auto bg-slate-950 relative w-full scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

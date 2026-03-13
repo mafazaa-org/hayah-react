@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { toast } from 'react-hot-toast';
 import type { Task } from '../types/task';
 import { taskService } from '../services/taskService';
 import { bulkOperationService, type BulkEditPayload } from '../services/bulkOperationService';
@@ -123,9 +124,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         isCreateTaskModalOpen: false,
         selectedColumnId: null
       }));
+      toast.success('تم إنشاء المهمة بنجاح');
     } catch (error) {
       console.error('Failed to create task:', error);
       set({ error: 'فشل إنشاء المهمة', isLoading: false });
+      toast.error('فشل إنشاء المهمة');
     }
   },
 
@@ -140,9 +143,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         ),
         isLoading: false
       }));
+      toast.success('تم تحديث المهمة بنجاح');
     } catch (error) {
       console.error('Failed to update task:', error);
       set({ error: 'فشل تحديث المهمة', isLoading: false });
+      toast.error('فشل تحديث المهمة');
     }
   },
 
@@ -192,9 +197,11 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         tasks: state.tasks.filter(task => task.id !== taskId),
         isLoading: false
       }));
+      toast.success('تم حذف المهمة');
     } catch (error) {
       console.error('Failed to delete task:', error);
       set({ error: 'فشل حذف المهمة', isLoading: false });
+      toast.error('فشل حذف المهمة');
     }
   },
 

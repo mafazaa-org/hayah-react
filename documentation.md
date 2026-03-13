@@ -2126,3 +2126,54 @@ All Phase 17 requirements are **completed**:
 - Task assignment and visual badging implemented.
 - Iteration-based filtering functional in the board view.
 - Clean TypeScript compilation and RTL/Arabic support verified.
+
+---
+
+## Phase 18: UI/UX, Accessibility & Responsiveness
+
+### 1. Objective
+
+Implement Phase 18 to enrich the application with semantic HTML structures, strict ARIA roles for rich interactive components, ensure a truly responsive mobile-first experience, and polish the final product with loading states, empty states, and dynamic animations.
+
+### 2. Semantic Structure & Accessibility (A11y)
+
+#### 2.1. HTML5 Tags and ARIA
+- **Layouts**: Updated `MainLayout`, `Sidebar`, and `Header` to use proper `<main>`, `<nav>`, `<aside>`, and `<header>` tags.
+- **Kanban Structure**: Replaced `<div>` containers with `<section>` and `<article>` tags in `KanbanColumn` and `TaskCard`.
+- **ARIA Attributes**: Applied `role`, `aria-label`, `aria-labelledby`, and `aria-expanded` globally across interactive elements to improve screen reader compatibility.
+
+#### 2.2. Keyboard Navigation
+- Addressed focus outlines and enhanced keyboard navigability across modals, dropdowns, and sidebar interactions.
+
+### 3. Responsiveness
+
+#### 3.1. Mobile-First Approach
+- **Layout Adjustments**: Tweaked `MainLayout` constraints to support mobile viewport heights and responsive overflowing.
+- **Collapsible Sidebar**: Configured the sidebar to act as an off-canvas drawer on mobile screens with an overlay dark background.
+- **Kanban Board**: Implemented horizontal scrolling snap for touch devices and optimized flex layouts in `TaskCard` so tags and assignees wrap organically.
+
+### 4. Feedback & Polish
+
+#### 4.1. Global Error Boundary
+- Created a global `ErrorBoundary` class component mapped in `App.tsx` out of `src/components/ErrorBoundary.tsx` to handle rendering errors gracefully and present a fallback UI instead of crashing.
+
+#### 4.2. Toast Notifications
+- Added standard React Hot Toast (`react-hot-toast`) provider via `<Toaster>` in `App.tsx` for consistent success and error notifications across tasks such as creation, updates, and deletion.
+
+#### 4.3. Loading States and Skeletons
+- Designed a reusable `<Skeleton>` component and `<TaskCardSkeleton>` (`src/components/UI/Skeleton.tsx`) to render in kanban columns, replacing traditional spinners with organic wireframe loaders during data fetching.
+
+#### 4.4. Empty States
+- Established a reusable `<EmptyState>` component (`src/components/UI/EmptyState.tsx`) to illustrate when lists yield zero tasks or when searches return empty, utilizing `lucide-react` icons.
+
+#### 4.5. Animations and Visual Feedback
+- **Framer Motion**: Integrated `framer-motion` inside `TaskDetailModal.tsx` for smooth, performant entering and exiting scale animations.
+- **Drag Feedback**: Upgraded drag-and-drop visuals in `TaskCard.tsx` with a prominent ring and a slight scale/rotation state when tasks are picked up, providing excellent touch and mouse feedback.
+
+### 5. Status
+
+All Phase 18 requirements are **completed**:
+- Full semantic and ARIA role compliance for the major UI elements.
+- Adaptive layouts verified for mobile scrolling and touch behaviors.
+- Complete polish suite implemented (Skeletons, Toasters, Empty States, Error Boundaries, Animations).
+- Clean TypeScript compilation and RTL/Arabic support verified.

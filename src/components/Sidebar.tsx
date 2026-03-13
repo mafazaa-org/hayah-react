@@ -23,6 +23,7 @@ export function Sidebar({ isOpen, onToggle }: { isOpen: boolean, onToggle: () =>
           ${isOpen ? 'w-64 translate-x-0' : 'w-0 -translate-x-full md:translate-x-0 md:w-0'}
           overflow-hidden flex flex-col
         `}
+        aria-hidden={!isOpen}
       >
         {/* Toggle Button (Desktop - Absolute on edge when closed implementation requires different logic, 
             here we assume specific layout handling or header button. For now keeping it simple internal) 
@@ -51,18 +52,21 @@ export function Sidebar({ isOpen, onToggle }: { isOpen: boolean, onToggle: () =>
         <div className="h-px bg-slate-800 mx-4 my-2" />
 
         {/* Spaces / Tree */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+        <nav
+          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent"
+          aria-label="مساحات العمل والمجلدات"
+        >
 
           {/* Spaces Header */}
           <div className="flex items-center justify-between px-4 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-            <span>المساحات</span>
-            <button className="hover:text-slate-300 transition-colors">
+            <h2 id="spaces-heading">المساحات</h2>
+            <button className="hover:text-slate-300 transition-colors" aria-label="إضافة مساحة جديدة">
               <Plus size={14} />
             </button>
           </div>
 
-          <FolderTree />
-        </div>
+          <FolderTree aria-labelledby="spaces-heading" />
+        </nav>
 
         {/* Bottom Actions */}
         <div className="p-2 border-t border-slate-800 bg-slate-900/50">

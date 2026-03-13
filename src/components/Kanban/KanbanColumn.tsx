@@ -6,13 +6,15 @@ import { useTaskStore } from '../../store/useTaskStore';
 import { useColumnStore } from '../../store/useColumnStore';
 import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
+import { EmptyState } from '../UI/EmptyState';
+import { TaskCardSkeleton } from '../UI/Skeleton';
 
 interface KanbanColumnProps {
   column: Column;
 }
 
 export function KanbanColumn({ column }: KanbanColumnProps) {
-  const { getFilteredAndSortedTasks, openCreateTaskModal } = useTaskStore();
+  const { getFilteredAndSortedTasks, openCreateTaskModal, isLoading } = useTaskStore();
   const { openColumnModal, deleteColumn } = useColumnStore();
 
   // Use filtered & sorted tasks scoped to this column
@@ -21,7 +23,10 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
   }, [getFilteredAndSortedTasks, column.id]);
 
   return (
-    <div className="shrink-0 w-80 bg-slate-900/50 rounded-lg p-3 border border-slate-800">
+    <section
+      className="shrink-0 w-80 bg-slate-900/50 rounded-lg p-3 border border-slate-800"
+      aria-labelledby={`column-header-${column.id}`}
+    >
       <ColumnHeader
         column={column}
         taskCount={tasks.length}
@@ -40,9 +45,21 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
               ${snapshot.isDraggingOver ? 'bg-slate-800/50' : ''}
             `}
           >
-            {tasks.map((task, index) => (
-              <TaskCard key={task.id} task={task} index={index} />
-            ))}
+            {isLoading ? (
+              <div className="py-2 space-y-2 relative pointer-events-none">
+                <TaskCardSkeleton />
+                <TaskCardSkeleton />
+                <TaskCardSkeleton />
+              </div>
+            ) : tasks.length > 0 ? (
+              tasks.map((task, index) => (
+                <TaskCard key={task.id} task={task} index={index} />
+              ))
+            ) : (
+              <div className="py-2">
+                <EmptyState title="لا توجد مهام" description="اسحب وأفلت المهام إلى هنا أو أضف مهمة جديدة." />
+              </div>
+            )}
             {provided.placeholder}
           </div>
         )}
@@ -56,6 +73,6 @@ export function KanbanColumn({ column }: KanbanColumnProps) {
         <Plus size={16} />
         إضافة مهمة
       </button>
-    </div>
+    </section>
   );
 }

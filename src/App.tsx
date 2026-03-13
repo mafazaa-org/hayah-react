@@ -1,5 +1,6 @@
 import './index.css'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { PrivateRoute } from './components/PrivateRoute'
 import { DashboardPage } from './pages/DashboardPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -19,6 +20,7 @@ import { usePresenceStore } from './store/usePresenceStore';
 import { useNotificationStore } from './store/useNotificationStore';
 import { useTaskStore } from './store/useTaskStore';
 import { useTaskDetailStore } from './store/useTaskDetailStore';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   useEffect(() => {
@@ -41,29 +43,34 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegistrationPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
-        <Route element={
-          <PrivateRoute>
-            <MainLayout />
-          </PrivateRoute>
-        }>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/dashboard/list/:listId" element={<ListView />} />
-          <Route path="/search" element={<SearchResultsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <LiveCursors />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegistrationPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route element={
+            <PrivateRoute>
+              <MainLayout />
+            </PrivateRoute>
+          }>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/list/:listId" element={<ListView />} />
+            <Route path="/search" element={<SearchResultsPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <LiveCursors />
+        <Toaster position="bottom-left" toastOptions={{
+          style: { background: '#1e293b', color: '#fff', border: '1px solid #334155' }
+        }} />
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 

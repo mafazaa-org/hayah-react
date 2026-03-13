@@ -135,7 +135,7 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
   const handleSearchChange = (value: string) => {
     setLocalSearch(value);
     const trimmed = value.trimStart();
-    
+
     const self = handleSearchChange as unknown as { _timeout?: number };
     if (self._timeout) window.clearTimeout(self._timeout);
     self._timeout = window.setTimeout(() => {
@@ -218,7 +218,11 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
   const defaultStatus = columns.length > 0 ? columns[0].id : '';
 
   return (
-    <div className="h-full flex flex-col">
+    <div
+      className="h-full flex flex-col"
+      role="region"
+      aria-label="لوحة كانبان"
+    >
       <BoardToolbar
         onRefresh={handleRefresh}
         onAddColumn={() => openColumnModal()}
@@ -266,6 +270,8 @@ export function KanbanBoard({ listId }: KanbanBoardProps) {
         <Droppable droppableId="board" type="COLUMN" direction="horizontal">
           {(provided) => (
             <div
+              role="list"
+              aria-label="أعمدة كانبان"
               ref={provided.innerRef}
               {...provided.droppableProps}
               className={`

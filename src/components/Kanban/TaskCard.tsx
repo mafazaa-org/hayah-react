@@ -75,7 +75,8 @@ export function TaskCard({ task, index }: TaskCardProps) {
   return (
     <Draggable draggableId={task.id} index={index}>
       {(provided, snapshot) => (
-        <div
+        <article
+          aria-label={`مهمة: ${task.title}`}
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
@@ -86,8 +87,8 @@ export function TaskCard({ task, index }: TaskCardProps) {
           }}
           className={`
             bg-slate-800 rounded-lg p-3 mb-2 border border-slate-700
-            hover:border-slate-600 hover:shadow-lg transition-all cursor-pointer
-            ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-sky-500' : ''}
+            hover:border-slate-600 hover:shadow-lg transition-all touch-manipulation
+            ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-sky-500/80 scale-[1.02] bg-slate-800/90 z-50 cursor-grabbing' : 'cursor-grab'}
           `}
         >
           {/* Top bar: priority + sprint + context menu */}
@@ -98,7 +99,7 @@ export function TaskCard({ task, index }: TaskCardProps) {
               style={{ backgroundColor: priorityColor }}
             />
             {iterationDisplayName && (
-              <span 
+              <span
                 className="ml-2 px-2 py-0.5 rounded-full bg-sky-500/15 text-[10px] text-sky-400 border border-sky-500/30 flex items-center gap-1 shrink-0"
                 title="الدورة"
               >
@@ -180,7 +181,7 @@ export function TaskCard({ task, index }: TaskCardProps) {
                 .map((field) => {
                   const value = task.customFields![field.id];
                   let displayValue = String(value);
-                  
+
                   if (field.type === 'select') {
                     const option = field.options?.find(o => o.id === value || o.value === value);
                     if (option) displayValue = option.value;
@@ -263,7 +264,7 @@ export function TaskCard({ task, index }: TaskCardProps) {
               )}
             </div>
           </div>
-        </div>
+        </article>
       )}
     </Draggable>
   );
