@@ -2218,3 +2218,79 @@ All Phase 19 requirements are **completed**:
 - Full implementation of Roadmap, Workload, and Overview components.
 - Integrated successfully into the application shell alongside Kanban and Timeline views.
 - Clean TypeScript compilation and RTL/Arabic support verified.
+
+---
+
+## Phase 20: Performance & Optimization
+
+### 1. Objective
+
+Implement Phase 20 to improve application performance through data loading optimizations (pagination, virtual scrolling, infinite scroll), caching strategies (TTL-based query cache with mutation-driven invalidation), and build-level optimizations (route-level code splitting, vendor chunk splitting, and client-side image compression).
+
+### 2. Data Loading
+
+#### 2.1. Paginated Tasks Hook (`src/hooks/usePaginatedTasks.ts`)
+A reusable hook wrapping `taskService.getTasksForListPaginated`:
+- **State Management**: Tracks `page`, `pageSize`, `total`, `hasMore`, `isLoading`, and `error`.
+- **Actions**: `loadMore()` appends next page results, `goToPage(n)` replaces results with a specific page, `refresh()` reloads the first page, and `reset()` clears state.
+- **Integration**: Works with the existing `SortOptions` and column system.
+
+#### 2.2. Virtual Scrolling Hook (`src/hooks/useVirtualList.ts`)
+A lightweight virtualizer that renders only visible items plus an overscan buffer:
+- **Adaptive**: Uses `ResizeObserver` to measure container height dynamically.
+- **Efficient**: Computes `startIndex`, `endIndex`, and `offsetY` from `scrollTop`, `itemHeight`, and `containerHeight` via `useMemo`.
+- **Usage**: Returns `containerRef`, `onScroll`, and rendering coordinates for slicing into the item array.
+
+#### 2.3. Infinite Scroll Hook (`src/hooks/useInfiniteScroll.ts`)
+An `IntersectionObserver`-based hook for progressive data loading:
+- **Sentinel Pattern**: Returns a `ref` to attach to a sentinel `<div>` at the bottom of a list.
+- **Guards**: Only triggers `onLoadMore` when `hasMore` is true and `isLoading` is false.
+- **Configurable**: Accepts `rootMargin` (default `200px`) and `threshold` for tuning trigger sensitivity.
+
+### 3. Caching
+
+#### 3.1. Query Cache Utility (`src/utils/queryCache.ts`)
+A generic TTL-based in-memory cache as a singleton:
+- **API**: `get<T>(key)`, `set<T>(key, data, ttl?)`, `has(key)`, `invalidate(keyOrPrefix)`, `clear()`.
+- **Pattern Invalidation**: Supports trailing `*` wildcards (e.g., `tasks:list-1*`) for invalidating groups of related entries.
+- **Default TTL**: 30 seconds, configurable per entry.
+
+#### 3.2. Service Integration (`src/services/taskService.ts`)
+Integrated `queryCache` into the task service:
+- **Read Operations**: `getTasksForList` checks the cache before executing queries.
+- **Mutations**: `createTask`, `updateTask`, `deleteTask`, and `moveTask` all call `queryCache.invalidate()` for the affected list, ensuring stale data is never served.
+
+### 4. Performance Monitoring & Optimization
+
+#### 4.1. Web Vitals Monitor (`src/hooks/usePerformanceMonitor.ts`)
+A development-only hook tracking key Web Vitals via the `PerformanceObserver` API:
+- **Metrics**: Largest Contentful Paint (LCP), First Input Delay (FID), Cumulative Layout Shift (CLS), First Contentful Paint (FCP).
+- **Rating**: Each metric is classified as `good`, `needs-improvement`, or `poor` based on standard thresholds.
+- **Usage**: Called once in `App.tsx`; no-op in production builds.
+
+#### 4.2. Image Optimizer (`src/utils/imageOptimizer.ts`)
+A client-side utility for compressing images before upload:
+- **Resize**: Scales images to fit within configurable `maxWidth`/`maxHeight` while preserving aspect ratio.
+- **Compress**: Uses `Canvas.toBlob` / `OffscreenCanvas.convertToBlob` with configurable JPEG/WebP quality.
+- **Convenience**: `optimizeAvatar()` preset (256×256, 85% quality) for profile image uploads.
+
+#### 4.3. Bundle Optimization (`vite.config.ts`)
+Configured Vite with `manualChunks` for optimal vendor splitting:
+- **`react-vendor`**: `react`, `react-dom`, `react-router-dom`.
+- **`ui-vendor`**: `lucide-react`, `framer-motion`, `@hello-pangea/dnd`.
+- **`data-vendor`**: `zustand`, `axios`, `@tanstack/react-query`.
+
+#### 4.4. Route-Level Code Splitting (`src/App.tsx`)
+All page-level imports converted to `React.lazy()` with `<Suspense>` fallback:
+- **Lazy Pages**: `LoginPage`, `RegistrationPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `VerifyEmailPage`, `ProfilePage`, `SettingsPage`, `ListView`, `DashboardPage`, `SearchResultsPage`.
+- **Fallback**: A shared `<PageLoader>` component (animated spinner) shown during chunk loading.
+
+### 5. Status
+
+All Phase 20 requirements are **completed**:
+- Full data loading infrastructure (pagination, virtual scrolling, infinite scroll).
+- TTL-based query cache with automatic mutation-driven invalidation.
+- Web Vitals monitoring in development mode.
+- Client-side image optimization for uploads.
+- Vendor chunk splitting and route-level code splitting configured.
+- Clean TypeScript compilation verified.

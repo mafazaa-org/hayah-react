@@ -1,5 +1,6 @@
 import type { Task } from '../types/task';
 import type { SortOptions } from '../components/Kanban/SortDropdown';
+import { queryCache } from '../utils/queryCache';
 
 // Simulated delay for async operations
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -83,6 +84,11 @@ export const taskService = {
    * Get all tasks for a list
    */
   getTasksForList: async (listId: string, columnIds: string[]): Promise<Task[]> => {
+    // Check cache first
+    const cacheKey = `tasks:${listId}`;
+    const cached = queryCache.get<Task[]>(cacheKey);
+    if (cached) return cached;
+
     await delay(400);
 
     if (!mockTasksStore.has(listId)) {
@@ -92,7 +98,9 @@ export const taskService = {
     }
 
     console.log(`Fetching tasks for list ${listId}`);
-    return mockTasksStore.get(listId) || [];
+    const tasks = mockTasksStore.get(listId) || [];
+    queryCache.set(cacheKey, tasks);
+    return tasks;
   },
 
   /**
@@ -175,6 +183,7 @@ export const taskService = {
 
     tasks.push(newTask);
     mockTasksStore.set(listId, tasks);
+    queryCache.invalidate(`tasks:${listId}*`);
 
     console.log('Created task:', newTask);
     return newTask;
@@ -197,6 +206,7 @@ export const taskService = {
         };
         tasks[taskIndex] = updatedTask;
         mockTasksStore.set(listId, tasks);
+        queryCache.invalidate(`tasks:${listId}*`);
         console.log('Updated task:', updatedTask);
         return updatedTask;
       }
@@ -239,6 +249,7 @@ export const taskService = {
           });
 
         mockTasksStore.set(listId, tasks);
+        queryCache.invalidate(`tasks:${listId}*`);
         console.log(`Moved task ${taskId} to ${newStatus} at position ${newOrder}`);
         return task;
       }
@@ -257,6 +268,7 @@ export const taskService = {
       const filteredTasks = tasks.filter(t => t.id !== taskId);
       if (filteredTasks.length !== tasks.length) {
         mockTasksStore.set(listId, filteredTasks);
+        queryCache.invalidate(`tasks:${listId}*`);
         console.log(`Deleted task ${taskId}`);
         return;
       }
