@@ -6,6 +6,9 @@ import { KanbanBoard } from '../components/Kanban/KanbanBoard';
 import { TableView } from '../components/Table/TableView';
 import { CalendarView } from '../components/Calendar/CalendarView';
 import { TimelineView } from '../components/Timeline/TimelineView';
+import { RoadmapView } from '../components/Roadmap/RoadmapView';
+import { WorkloadView } from '../components/Workload/WorkloadView';
+import { OverviewBoard } from '../components/Overview/OverviewBoard';
 import { ViewModeSelector } from '../components/View/ViewModeSelector';
 import { CreateTaskModal } from '../components/Task/CreateTaskModal';
 import { ColumnModal } from '../components/Kanban/ColumnModal';
@@ -77,6 +80,9 @@ export function ListView() {
         {currentView === 'table' && <TableView listId={listId} />}
         {currentView === 'calendar' && <CalendarView listId={listId} />}
         {currentView === 'timeline' && <TimelineView listId={listId} />}
+        {currentView === 'roadmap' && <RoadmapView listId={listId} />}
+        {currentView === 'workload' && <WorkloadView listId={listId} />}
+        {currentView === 'overview' && <OverviewBoard listId={listId} />}
       </div>
 
       {/* Modals (only for Kanban view) */}

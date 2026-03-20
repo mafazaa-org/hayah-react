@@ -1,5 +1,5 @@
 // View mode types
-export type ViewMode = 'kanban' | 'table' | 'calendar' | 'timeline';
+export type ViewMode = 'kanban' | 'table' | 'calendar' | 'timeline' | 'roadmap' | 'workload' | 'overview';
 
 // View configuration interface
 export interface ViewConfig {
@@ -52,6 +52,27 @@ export const VIEW_MODES: ViewModeInfo[] = [
     name: 'خط زمني',
     description: 'عرض جانت للمهام',
     icon: 'GanttChart',
+    available: true
+  },
+  {
+    id: 'roadmap',
+    name: 'خارطة الطريق',
+    description: 'خطة استراتيجية للمشروع',
+    icon: 'Map',
+    available: true
+  },
+  {
+    id: 'workload',
+    name: 'عبء العمل',
+    description: 'حجم المهام الموزعة على الفريق',
+    icon: 'Users',
+    available: true
+  },
+  {
+    id: 'overview',
+    name: 'نظرة عامة',
+    description: 'إحصائيات وملخص حالة القائمة',
+    icon: 'PieChart',
     available: true
   }
 ];

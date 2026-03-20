@@ -2177,3 +2177,44 @@ All Phase 18 requirements are **completed**:
 - Adaptive layouts verified for mobile scrolling and touch behaviors.
 - Complete polish suite implemented (Skeletons, Toasters, Empty States, Error Boundaries, Animations).
 - Clean TypeScript compilation and RTL/Arabic support verified.
+
+---
+
+## Phase 19: Additional Board Views (Future Enhancements)
+
+### 1. Objective
+
+Implement Phase 19 to provide alternative perspectives on project data, moving beyond standard Kanban and Lists. The new views target high-level planning (Roadmap), resource balancing (Team Workload), and executive summaries (Status Overview). Note that Gantt Chart functionality was covered by the Timeline view from Phase 7.
+
+### 2. Core Architecture
+
+#### 2.1. View Configuration (`src/types/view.ts`)
+- Added structural types for `roadmap`, `workload`, and `overview` to the `ViewMode` union.
+- Registered metadata in `VIEW_MODES` so the selector UI automatically enables them.
+
+#### 2.2. View Integration (`src/pages/ListView.tsx`)
+- Updated the primary `ListView` hub to conditionally render `<RoadmapView>`, `<WorkloadView>`, and `<OverviewBoard>` based on the active `currentView` state.
+
+### 3. Deployed Views
+
+#### 3.1. Product Roadmap View (`src/components/Roadmap/RoadmapView.tsx`)
+- **Strategic Mapping**: Groups tasks by tags (acting as Epics/Features).
+- **Progress Tracking**: Aggregates task completion mathematically per feature.
+- **Visuals**: Displays high-level progress bars and compact task cards for a macro-level timeline overview.
+
+#### 3.2. Team Workload View (`src/components/Workload/WorkloadView.tsx`)
+- **Resource Allocation**: Aggregates pending and completed tasks per assignee.
+- **Capacity Indicators**: Computes a workload capacity level with visual warnings (red/amber/green) when maximum thresholds are exceeded.
+- **Presence Aware**: Hooks into `usePresenceStore` to highlight active/online users traversing the workload metrics.
+
+#### 3.3. Status Overview Board (`src/components/Overview/OverviewBoard.tsx`)
+- **Executive Summary**: Renders total metrics (completed, in-progress, pending) instantly.
+- **Priority Breakdown**: Visualizes the distribution of task urgency (Critical, High, Medium, Low) using designated system colors.
+- **Data Visualizations**: Uses organic CSS stacked bar charts for a responsive, interactive snapshot without heavy charting libraries.
+
+### 4. Status
+
+All Phase 19 requirements are **completed**:
+- Full implementation of Roadmap, Workload, and Overview components.
+- Integrated successfully into the application shell alongside Kanban and Timeline views.
+- Clean TypeScript compilation and RTL/Arabic support verified.
