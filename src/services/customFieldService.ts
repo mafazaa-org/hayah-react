@@ -1,76 +1,40 @@
 import type { CustomField } from '../types/customField';
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Simulated persistence
-let customFieldsStorage: CustomField[] = [
-  {
-    id: 'cf-budget',
-    listId: 'default-list', // placeholder
-    name: 'الميزانية',
-    type: 'number',
-    showOnCard: true,
-    order: 0,
-    defaultValue: 0
-  },
-  {
-    id: 'cf-deadline',
-    listId: 'default-list',
-    name: 'الموعد النهائي الفعلي',
-    type: 'date',
-    showOnCard: false,
-    order: 1
-  },
-  {
-    id: 'cf-status-extra',
-    listId: 'default-list',
-    name: 'مرحلة التدقيق',
-    type: 'select',
-    options: [
-      { id: 'opt-1', value: 'بانتظار المراجعة', color: '#64748b' },
-      { id: 'opt-2', value: 'تمت المراجعة الأولى', color: '#3b82f6' },
-      { id: 'opt-3', value: 'جاهز للاعتماد', color: '#10b981' }
-    ],
-    showOnCard: true,
-    order: 2
-  }
-];
+import { apiClient } from '../apiClient';
 
 export const customFieldService = {
-  getCustomFields: async (_listId: string): Promise<CustomField[]> => {
-    await delay(300);
-    return customFieldsStorage.filter(cf => cf.listId === _listId || cf.listId === 'default-list');
+  getCustomFields: async (listId: string): Promise<CustomField[]> => {
+    const response = await apiClient.get<CustomField[]>('/lists/custom-fields', {
+      params: { listId },
+    });
+    return response.data;
   },
 
-  createCustomField: async (_listId: string, definition: Omit<CustomField, 'id'>): Promise<CustomField> => {
-    await delay(400);
-    const newField: CustomField = {
-      ...definition,
-      id: `cf-${Date.now()}`
-    };
-    customFieldsStorage.push(newField);
-    return newField;
+  createCustomField: async (listId: string, definition: Omit<CustomField, 'id'>): Promise<CustomField> => {
+    const response = await apiClient.post<CustomField>('/lists/custom-fields', {
+      name: definition.name,
+      type: definition.type,
+      listId,
+      config: definition.options ? { options: definition.options.map(o => o.value) } : null,
+    });
+    return response.data;
   },
 
   updateCustomField: async (id: string, updates: Partial<CustomField>): Promise<CustomField> => {
-    await delay(300);
-    const index = customFieldsStorage.findIndex(cf => cf.id === id);
-    if (index === -1) throw new Error('Field not found');
-    
-    customFieldsStorage[index] = { ...customFieldsStorage[index], ...updates };
-    return customFieldsStorage[index];
+    const response = await apiClient.put<CustomField>(`/lists/custom-fields/${id}`, {
+      name: updates.name,
+      config: updates.options ? { options: updates.options.map(o => o.value) } : undefined,
+    });
+    return response.data;
   },
 
   deleteCustomField: async (id: string): Promise<void> => {
-    await delay(300);
-    customFieldsStorage = customFieldsStorage.filter(cf => cf.id !== id);
+    await apiClient.delete(`/lists/custom-fields/${id}`);
   },
 
-  reorderCustomFields: async (_listId: string, orderedIds: string[]): Promise<void> => {
-    await delay(400);
-    orderedIds.forEach((id, index) => {
-      const field = customFieldsStorage.find(cf => cf.id === id);
-      if (field) field.order = index;
+  reorderCustomFields: async (listId: string, orderedIds: string[]): Promise<void> => {
+    await apiClient.put('/lists/custom-fields/reorder', {
+      listId,
+      orderedIds,
     });
-  }
+  },
 };

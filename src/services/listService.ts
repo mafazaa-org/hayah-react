@@ -1,6 +1,7 @@
 import type { NavigationItem } from './folderService';
+import { apiClient } from '../apiClient';
 
-// Extended list details (could be part of NavigationItem or separate fetch)
+// Extended list details
 export interface ListDetails extends NavigationItem {
   createdAt?: string;
   updatedAt?: string;
@@ -8,87 +9,52 @@ export interface ListDetails extends NavigationItem {
   members?: string[];
 }
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Mock templates
-const LIST_TEMPLATES: Partial<NavigationItem>[] = [
-  {
-    name: "Kanban Board",
-    type: "list",
-    description: "Standard To Do, In Progress, Done workflow",
-    color: "#3b82f6"
-  },
-  {
-    name: "Bug Tracking",
-    type: "list",
-    description: "Track issues with priority and severity",
-    color: "#ef4444"
-  },
-  {
-    name: "Content Calendar",
-    type: "list",
-    description: "Plan and schedule content publication",
-    color: "#10b981"
-  }
-];
-
 export const listService = {
   getListDetails: async (id: string): Promise<ListDetails> => {
-    await delay(300);
-    // In a real app, fetch full details
-    return {
-      id,
-      type: 'list',
-      name: 'Loaded List',
-      description: 'Fetched from API',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    const response = await apiClient.get<ListDetails>(`/lists/${id}`);
+    return { ...response.data, type: 'list' };
   },
 
   updateList: async (id: string, updates: Partial<ListDetails>): Promise<void> => {
-    await delay(300);
-    console.log(`Updated list ${id}`, updates);
+    await apiClient.put(`/lists/${id}`, {
+      name: updates.name,
+      description: updates.description,
+      visibility: updates.visibility,
+    });
   },
 
   duplicateList: async (id: string, options: { withTasks: boolean }): Promise<NavigationItem> => {
-    await delay(500);
-    console.log(`Duplicating list ${id} options:`, options);
-    return {
-      id: `list-${Date.now()}`,
-      type: 'list',
-      name: `Copy of List ${id}`,
-      visibility: 'private'
-    };
+    const response = await apiClient.post<NavigationItem>(`/lists/${id}/duplicate`, {
+      includeTasks: options.withTasks,
+    });
+    return { ...response.data, type: 'list' };
   },
 
   archiveList: async (id: string, archive: boolean): Promise<void> => {
-    await delay(300);
-    console.log(`Set archive status of ${id} to ${archive}`);
+    if (archive) {
+      await apiClient.post(`/lists/${id}/archive`);
+    } else {
+      await apiClient.post(`/lists/${id}/unarchive`);
+    }
   },
 
   getTemplates: async (): Promise<Partial<NavigationItem>[]> => {
-    await delay(300);
-    return LIST_TEMPLATES;
+    const response = await apiClient.get<Partial<NavigationItem>[]>('/lists/templates');
+    return response.data;
   },
 
-  createFromTemplate: async (templateIndex: number, name: string, parentId: string | null): Promise<NavigationItem> => {
-    await delay(500);
-    console.log(`Creating list "${name}" from template index ${templateIndex} in parent ${parentId}`);
-    const template = LIST_TEMPLATES[templateIndex];
-
-    return {
-      id: `list-tpl-${Date.now()}`,
-      type: 'list',
+  createFromTemplate: async (templateId: string, name: string, parentId: string | null): Promise<NavigationItem> => {
+    const response = await apiClient.post<NavigationItem>(`/lists/templates/${templateId}/create-list`, {
       name,
-      description: template.description || 'Created from template',
-      color: template.color,
-      visibility: 'private'
-    };
+      folderId: parentId,
+    });
+    return { ...response.data, type: 'list' };
   },
 
   saveAsTemplate: async (listId: string, name: string): Promise<void> => {
-    await delay(400);
-    console.log(`Saved list ${listId} as template "${name}"`);
-  }
+    await apiClient.post(`/lists/templates/from-list/${listId}`, {
+      name,
+      description: `Template created from list`,
+    });
+  },
 };

@@ -9,47 +9,7 @@ import type {
   TaskActivity,
   Task,
 } from '../types/task';
-
-// Simulated delay
-const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-// ---------- In-memory stores ----------
-
-const detailStore = new Map<string, TaskDetail>();
-
-let _idCounter = 1000;
-const uid = () => `detail-${++_idCounter}`;
-
-// Helper: build mock detail wrapper around a Task
-function ensureDetail(taskId: string): TaskDetail {
-  if (!detailStore.has(taskId)) {
-    const base: TaskDetail = {
-      id: taskId,
-      title: '',
-      status: '',
-      order: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      subtasks: [],
-      checklists: [],
-      taskDependencies: [],
-      attachments: [],
-      activity: [
-        {
-          id: uid(),
-          taskId,
-          type: 'created',
-          actor: 'المستخدم الحالي',
-          description: 'تم إنشاء المهمة',
-          timestamp: new Date().toISOString(),
-        },
-      ],
-      comments: [],
-    };
-    detailStore.set(taskId, base);
-  }
-  return detailStore.get(taskId)!;
-}
+import { apiClient } from '../apiClient';
 
 // Merge lightweight Task fields into a TaskDetail record so that the modal
 // always reflects the latest card-level data.
@@ -74,17 +34,38 @@ function mergeTaskIntoDetail(detail: TaskDetail, task: Task): TaskDetail {
   };
 }
 
-// ---------- Service ----------
-
 export const taskDetailService = {
   // ─── Task Detail ──────────────────────────────────────────────
   async getTaskDetail(taskId: string, task?: Task): Promise<TaskDetail> {
-    await delay(200);
-    const detail = ensureDetail(taskId);
+    const response = await apiClient.get<TaskDetail>(`/tasks/${taskId}`);
+    let detail = response.data;
+
+    // Fetch subtasks, checklists, dependencies, attachments, activity in parallel
+    const [subtasksRes, checklistsRes, depsRes, attachmentsRes, activityRes] = await Promise.allSettled([
+      apiClient.get(`/tasks/${taskId}/subtasks`),
+      apiClient.get(`/tasks/${taskId}/checklists`),
+      apiClient.get(`/tasks/${taskId}/dependencies`),
+      apiClient.get(`/attachments/task/${taskId}`),
+      apiClient.get(`/tasks/${taskId}/activities`),
+    ]);
+
+    detail.subtasks = subtasksRes.status === 'fulfilled' ? subtasksRes.value.data : [];
+    detail.checklists = checklistsRes.status === 'fulfilled' ? checklistsRes.value.data : [];
+
+    // Dependencies response: { blocking: [], blockedBy: [] }
+    if (depsRes.status === 'fulfilled') {
+      const depsData = depsRes.value.data as { blocking: TaskDependency[]; blockedBy: TaskDependency[] };
+      detail.taskDependencies = [...(depsData.blocking || []), ...(depsData.blockedBy || [])];
+    } else {
+      detail.taskDependencies = [];
+    }
+
+    detail.attachments = attachmentsRes.status === 'fulfilled' ? attachmentsRes.value.data : [];
+    detail.activity = activityRes.status === 'fulfilled' ? activityRes.value.data : [];
+    detail.comments = []; // Comments are loaded separately via commentService
+
     if (task) {
-      const merged = mergeTaskIntoDetail(detail, task);
-      detailStore.set(taskId, merged);
-      return merged;
+      detail = mergeTaskIntoDetail(detail, task);
     }
     return detail;
   },
@@ -93,27 +74,12 @@ export const taskDetailService = {
     taskId: string,
     updates: Partial<Task>
   ): Promise<Partial<Task>> {
-    await delay(150);
-    const detail = ensureDetail(taskId);
-    Object.assign(detail, updates, { updatedAt: new Date().toISOString() });
-    detailStore.set(taskId, detail);
+    await apiClient.put(`/tasks/${taskId}`, updates);
     return updates;
   },
 
   async archiveTask(taskId: string): Promise<void> {
-    await delay(150);
-    const detail = ensureDetail(taskId);
-    detail.isArchived = true;
-    detail.updatedAt = new Date().toISOString();
-    detail.activity.unshift({
-      id: uid(),
-      taskId,
-      type: 'archived',
-      actor: 'المستخدم الحالي',
-      description: 'تم أرشفة المهمة',
-      timestamp: new Date().toISOString(),
-    });
-    detailStore.set(taskId, detail);
+    await apiClient.post(`/tasks/${taskId}/archive`);
   },
 
   // ─── Subtasks ─────────────────────────────────────────────────
@@ -121,63 +87,47 @@ export const taskDetailService = {
     taskId: string,
     title: string
   ): Promise<Subtask> {
-    await delay(150);
-    const detail = ensureDetail(taskId);
-    const subtask: Subtask = {
-      id: uid(),
+    const response = await apiClient.post<Subtask>('/tasks/subtasks', {
       taskId,
       title,
-      completed: false,
-      order: detail.subtasks.length,
-    };
-    detail.subtasks.push(subtask);
-    detailStore.set(taskId, detail);
-    return subtask;
+      orderIndex: 0, // Backend will handle ordering
+    });
+    return response.data;
   },
 
   async updateSubtask(
-    taskId: string,
+    _taskId: string,
     subtaskId: string,
     updates: Partial<Pick<Subtask, 'title' | 'completed'>>
   ): Promise<Subtask> {
-    await delay(100);
-    const detail = ensureDetail(taskId);
-    const st = detail.subtasks.find((s) => s.id === subtaskId);
-    if (!st) throw new Error('Subtask not found');
-    Object.assign(st, updates);
-    detailStore.set(taskId, detail);
-    return st;
+    const response = await apiClient.put<Subtask>(`/tasks/subtasks/${subtaskId}`, {
+      title: updates.title,
+      isCompleted: updates.completed,
+    });
+    return response.data;
   },
 
-  async deleteSubtask(taskId: string, subtaskId: string): Promise<void> {
-    await delay(100);
-    const detail = ensureDetail(taskId);
-    detail.subtasks = detail.subtasks.filter((s) => s.id !== subtaskId);
-    detailStore.set(taskId, detail);
+  async deleteSubtask(_taskId: string, subtaskId: string): Promise<void> {
+    await apiClient.delete(`/tasks/subtasks/${subtaskId}`);
   },
 
-  async toggleSubtask(taskId: string, subtaskId: string): Promise<Subtask> {
-    await delay(80);
-    const detail = ensureDetail(taskId);
-    const st = detail.subtasks.find((s) => s.id === subtaskId);
-    if (!st) throw new Error('Subtask not found');
-    st.completed = !st.completed;
-    detailStore.set(taskId, detail);
-    return st;
+  async toggleSubtask(_taskId: string, subtaskId: string): Promise<Subtask> {
+    // Get current state first, then toggle
+    const current = await apiClient.get<Subtask>(`/tasks/subtasks/${subtaskId}`);
+    const isCompleted = !(current.data as unknown as Record<string, unknown>).isCompleted;
+    const response = await apiClient.put<Subtask>(`/tasks/subtasks/${subtaskId}`, {
+      isCompleted,
+    });
+    return response.data;
   },
 
-  async reorderSubtasks(taskId: string, orderedIds: string[]): Promise<void> {
-    await delay(80);
-    const detail = ensureDetail(taskId);
-    const map = new Map(detail.subtasks.map((s) => [s.id, s]));
-    detail.subtasks = orderedIds
-      .map((id, i) => {
-        const s = map.get(id);
-        if (s) s.order = i;
-        return s;
-      })
-      .filter(Boolean) as Subtask[];
-    detailStore.set(taskId, detail);
+  async reorderSubtasks(_taskId: string, orderedIds: string[]): Promise<void> {
+    // Move each subtask to its new position
+    for (let i = 0; i < orderedIds.length; i++) {
+      await apiClient.put(`/tasks/subtasks/${orderedIds[i]}`, {
+        orderIndex: i,
+      });
+    }
   },
 
   // ─── Checklists ───────────────────────────────────────────────
@@ -185,79 +135,59 @@ export const taskDetailService = {
     taskId: string,
     title: string
   ): Promise<Checklist> {
-    await delay(150);
-    const detail = ensureDetail(taskId);
-    const checklist: Checklist = { id: uid(), taskId, title, items: [] };
-    detail.checklists.push(checklist);
-    detailStore.set(taskId, detail);
-    return checklist;
+    const response = await apiClient.post<Checklist>('/tasks/checklists', {
+      taskId,
+      title,
+      orderIndex: 0,
+    });
+    return { ...response.data, items: [] };
   },
 
   async addChecklistItem(
-    taskId: string,
+    _taskId: string,
     checklistId: string,
     title: string
   ): Promise<ChecklistItem> {
-    await delay(100);
-    const detail = ensureDetail(taskId);
-    const cl = detail.checklists.find((c) => c.id === checklistId);
-    if (!cl) throw new Error('Checklist not found');
-    const item: ChecklistItem = {
-      id: uid(),
+    const response = await apiClient.post<ChecklistItem>('/tasks/checklist-items', {
       checklistId,
       title,
-      completed: false,
-      order: cl.items.length,
-    };
-    cl.items.push(item);
-    detailStore.set(taskId, detail);
-    return item;
+      orderIndex: 0,
+    });
+    return response.data;
   },
 
   async updateChecklistItem(
-    taskId: string,
-    checklistId: string,
+    _taskId: string,
+    _checklistId: string,
     itemId: string,
     updates: Partial<Pick<ChecklistItem, 'title' | 'completed'>>
   ): Promise<ChecklistItem> {
-    await delay(80);
-    const detail = ensureDetail(taskId);
-    const cl = detail.checklists.find((c) => c.id === checklistId);
-    if (!cl) throw new Error('Checklist not found');
-    const item = cl.items.find((i) => i.id === itemId);
-    if (!item) throw new Error('Checklist item not found');
-    Object.assign(item, updates);
-    detailStore.set(taskId, detail);
-    return item;
+    const response = await apiClient.put<ChecklistItem>(`/tasks/checklist-items/${itemId}`, {
+      title: updates.title,
+      isCompleted: updates.completed,
+    });
+    return response.data;
   },
 
   async deleteChecklistItem(
-    taskId: string,
-    checklistId: string,
+    _taskId: string,
+    _checklistId: string,
     itemId: string
   ): Promise<void> {
-    await delay(80);
-    const detail = ensureDetail(taskId);
-    const cl = detail.checklists.find((c) => c.id === checklistId);
-    if (!cl) throw new Error('Checklist not found');
-    cl.items = cl.items.filter((i) => i.id !== itemId);
-    detailStore.set(taskId, detail);
+    await apiClient.delete(`/tasks/checklist-items/${itemId}`);
   },
 
   async toggleChecklistItem(
-    taskId: string,
-    checklistId: string,
+    _taskId: string,
+    _checklistId: string,
     itemId: string
   ): Promise<ChecklistItem> {
-    await delay(80);
-    const detail = ensureDetail(taskId);
-    const cl = detail.checklists.find((c) => c.id === checklistId);
-    if (!cl) throw new Error('Checklist not found');
-    const item = cl.items.find((i) => i.id === itemId);
-    if (!item) throw new Error('Checklist item not found');
-    item.completed = !item.completed;
-    detailStore.set(taskId, detail);
-    return item;
+    const current = await apiClient.get<ChecklistItem>(`/tasks/checklist-items/${itemId}`);
+    const isCompleted = !(current.data as unknown as Record<string, unknown>).isCompleted;
+    const response = await apiClient.put<ChecklistItem>(`/tasks/checklist-items/${itemId}`, {
+      isCompleted,
+    });
+    return response.data;
   },
 
   // ─── Dependencies ─────────────────────────────────────────────
@@ -265,47 +195,27 @@ export const taskDetailService = {
     taskId: string,
     targetTaskId: string,
     type: DependencyType,
-    targetTaskTitle?: string
+    _targetTaskTitle?: string
   ): Promise<TaskDependency> {
-    await delay(150);
-    // Circular check: if target already blocks/blocked_by this task
-    const targetDetail = detailStore.get(targetTaskId);
-    if (targetDetail) {
-      const circular = targetDetail.taskDependencies.some(
-        (d) => d.targetTaskId === taskId
-      );
-      if (circular)
-        throw new Error('تحذير: تبعية دائرية! لا يمكن إنشاء هذه التبعية.');
-    }
-
-    const detail = ensureDetail(taskId);
-    const dep: TaskDependency = {
-      id: uid(),
+    const response = await apiClient.post<TaskDependency>('/tasks/dependencies', {
+      taskId,
+      dependsOnTaskId: targetTaskId,
       type,
-      sourceTaskId: taskId,
-      targetTaskId,
-      targetTaskTitle,
-    };
-    detail.taskDependencies.push(dep);
-    detailStore.set(taskId, detail);
-    return dep;
+    });
+    return response.data;
   },
 
   async getDependencies(taskId: string): Promise<TaskDependency[]> {
-    await delay(100);
-    return ensureDetail(taskId).taskDependencies;
+    const response = await apiClient.get(`/tasks/${taskId}/dependencies`);
+    const data = response.data as { blocking: TaskDependency[]; blockedBy: TaskDependency[] };
+    return [...(data.blocking || []), ...(data.blockedBy || [])];
   },
 
   async deleteDependency(
-    taskId: string,
+    _taskId: string,
     dependencyId: string
   ): Promise<void> {
-    await delay(100);
-    const detail = ensureDetail(taskId);
-    detail.taskDependencies = detail.taskDependencies.filter(
-      (d) => d.id !== dependencyId
-    );
-    detailStore.set(taskId, detail);
+    await apiClient.delete(`/tasks/dependencies/${dependencyId}`);
   },
 
   // ─── Attachments ──────────────────────────────────────────────
@@ -313,64 +223,43 @@ export const taskDetailService = {
     taskId: string,
     file: File
   ): Promise<TaskAttachment> {
-    // Simulate upload with progress
-    await delay(400);
-    const detail = ensureDetail(taskId);
-    const attachment: TaskAttachment = {
-      id: uid(),
-      taskId,
-      name: file.name,
-      size: file.size,
-      mimeType: file.type,
-      url: URL.createObjectURL(file),
-      uploadedAt: new Date().toISOString(),
-      uploadedBy: 'المستخدم الحالي',
-    };
-    detail.attachments.push(attachment);
-    detailStore.set(taskId, detail);
-    return attachment;
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<TaskAttachment>(
+      `/attachments/task/${taskId}/upload`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
   },
 
   async getAttachments(taskId: string): Promise<TaskAttachment[]> {
-    await delay(100);
-    return ensureDetail(taskId).attachments;
+    const response = await apiClient.get<TaskAttachment[]>(`/attachments/task/${taskId}`);
+    return response.data;
   },
 
   async deleteAttachment(
-    taskId: string,
+    _taskId: string,
     attachmentId: string
   ): Promise<void> {
-    await delay(100);
-    const detail = ensureDetail(taskId);
-    detail.attachments = detail.attachments.filter(
-      (a) => a.id !== attachmentId
-    );
-    detailStore.set(taskId, detail);
+    await apiClient.delete(`/attachments/${attachmentId}`);
   },
 
   // ─── Activity ─────────────────────────────────────────────────
   async getActivity(
     taskId: string,
-    page = 1,
-    pageSize = 10
+    _page = 1,
+    _pageSize = 10
   ): Promise<{ items: TaskActivity[]; total: number }> {
-    await delay(150);
-    const detail = ensureDetail(taskId);
-    const total = detail.activity.length;
-    const start = (page - 1) * pageSize;
-    const items = detail.activity.slice(start, start + pageSize);
-    return { items, total };
+    const response = await apiClient.get<TaskActivity[]>(`/tasks/${taskId}/activities`);
+    const items = response.data;
+    return { items, total: items.length };
   },
 
   // Helper: push an activity entry (used internally by store)
-  pushActivity(taskId: string, entry: Omit<TaskActivity, 'id' | 'taskId' | 'timestamp'>) {
-    const detail = ensureDetail(taskId);
-    detail.activity.unshift({
-      ...entry,
-      id: uid(),
-      taskId,
-      timestamp: new Date().toISOString(),
-    });
-    detailStore.set(taskId, detail);
+  // In the real backend, activities are auto-created — this is a no-op.
+  pushActivity(_taskId: string, _entry: Omit<TaskActivity, 'id' | 'taskId' | 'timestamp'>) {
+    // Activities are auto-generated by the backend on task changes.
+    // No manual push needed.
   },
 };

@@ -1,7 +1,5 @@
 import type { Task } from '../types/task';
-
-// Simulated delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { apiClient } from '../apiClient';
 
 /** A single row parsed from the uploaded CSV */
 export interface ImportRow {
@@ -53,6 +51,7 @@ const HEADER_TO_FIELD: Record<string, keyof ImportRow> = {
 export const importService = {
   /**
    * Download a blank CSV template that users can fill in.
+   * (Client-side only — no backend needed)
    */
   downloadTemplate: (): void => {
     const bom = '\ufeff';
@@ -70,9 +69,9 @@ export const importService = {
 
   /**
    * Parse a CSV file and return a preview of data + auto-detected column mapping.
+   * (Client-side parsing for preview)
    */
   parseCSV: async (file: File): Promise<ImportPreview> => {
-    await delay(400);
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
     if (lines.length === 0) throw new Error('الملف فارغ');
@@ -89,7 +88,6 @@ export const importService = {
           row[field] = cells[idx];
         }
       });
-      // At minimum, skip entirely empty rows
       if (row.title || row.description) {
         rows.push(row);
       }
@@ -109,58 +107,58 @@ export const importService = {
   },
 
   /**
-   * Commit the import — creates tasks from parsed rows.
-   * Reports progress via callback.
+   * Commit the import — uploads CSV file to backend for processing.
    */
   commitImport: async (
     listId: string,
-    rows: ImportRow[],
-    defaultStatus: string,
-    onProgress?: (progress: ImportProgress) => void
+    _rows: ImportRow[],
+    _defaultStatus: string,
+    onProgress?: (progress: ImportProgress) => void,
+    originalFile?: File
   ): Promise<Task[]> => {
-    const created: Task[] = [];
-    const errors: string[] = [];
-    const total = rows.length;
+    if (originalFile) {
+      // Upload CSV file directly to backend
+      const formData = new FormData();
+      formData.append('file', originalFile);
 
-    for (let i = 0; i < total; i++) {
-      await delay(120); // simulate per-row processing
+      onProgress?.({ processed: 0, total: _rows.length, errors: [] });
 
-      const row = rows[i];
-      if (!row.title.trim()) {
-        errors.push(`صف ${i + 1}: العنوان مطلوب`);
-        onProgress?.({ processed: i + 1, total, errors: [...errors] });
-        continue;
-      }
+      const response = await apiClient.post<{ created: number; failed: number; errors: { row: number; message: string }[] }>(
+        `/export-import/lists/${listId}/import/tasks`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
 
-      const task: Task = {
-        id: `task-${listId}-imp-${Date.now()}-${i}`,
-        title: row.title.trim(),
-        description: row.description?.trim() || undefined,
-        status: row.status?.trim() || defaultStatus,
-        priority: validatePriority(row.priority?.trim()),
-        dueDate: row.dueDate?.trim() || undefined,
-        tags: row.tags ? row.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-        assignees: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        order: i,
-      };
+      const result = response.data;
+      const errors = result.errors.map(e => `صف ${e.row}: ${e.message}`);
+      onProgress?.({ processed: result.created + result.failed, total: result.created + result.failed, errors });
 
-      created.push(task);
-      onProgress?.({ processed: i + 1, total, errors: [...errors] });
+      // Return empty array since backend handles task creation
+      return [];
     }
 
-    return created;
+    // Fallback: use bulk create API with parsed rows
+    const tasks = _rows.filter(r => r.title.trim()).map(row => ({
+      title: row.title.trim(),
+      description: row.description?.trim() || undefined,
+      status: row.status?.trim() || _defaultStatus,
+      priority: row.priority?.trim() || 'Medium',
+      dueDate: row.dueDate?.trim() || undefined,
+    }));
+
+    onProgress?.({ processed: 0, total: tasks.length, errors: [] });
+
+    const response = await apiClient.post<{ created: Task[] }>('/export-import/tasks/bulk', {
+      listId,
+      tasks,
+    });
+
+    onProgress?.({ processed: tasks.length, total: tasks.length, errors: [] });
+    return response.data.created || [];
   },
 };
 
 // --- helpers ---
-
-function validatePriority(val?: string): Task['priority'] {
-  const valid = ['low', 'medium', 'high', 'critical'];
-  if (val && valid.includes(val)) return val as Task['priority'];
-  return 'medium';
-}
 
 /** Very simple CSV line parser supporting quoted fields */
 function parseCsvLine(line: string): string[] {

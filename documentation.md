@@ -2294,3 +2294,34 @@ All Phase 20 requirements are **completed**:
 - Client-side image optimization for uploads.
 - Vendor chunk splitting and route-level code splitting configured.
 - Clean TypeScript compilation verified.
+
+---
+
+## Backend API Integration & Mock Replacement
+
+### 1. Objective
+
+Finalize the transition from frontend-mocked services to a fully functional backend implementation. This involved identifying discrepancies between initial mock data structures, implementing missing backend features, and systematically replacing local mock data services with actual server API calls.
+
+### 2. Implementation Details
+
+#### 2.1 API Integration and Service Updates
+- **Transitioning from Mocks**: Systematically audited and replaced frontend mock services with live REST API endpoint calls connected directly to the backend. This provides full data persistence and genuine latency.
+- **Strict Typing Fixes**: Addressed TypeScript compilation errors surfaced during the data transition:
+  - Validated type safety in `columnService.ts`, correctly mapping data retrieved from the API to the internal `Column` interface properties instead of loosely matching `Record<string, unknown>`.
+  - Resolved `socketService.ts` typing mismatches where string event names violated the `socket.io-client` API requirement. Properly applied `ReservedOrUserEventNames` typing for strict type safety in the `SocketServiceWrapper`.
+
+#### 2.2 Bridging Missing Functionality
+Bridged all functional gaps to ensure full feature parity between the frontend and the actual backend implementation. Key integrations include:
+- **Iterations / Sprints**: Connected Iterations CRUD operations to their respective database endpoints.
+- **Collaboration Elements**: Secured WebSocket events and database endpoints for real-time comment reactions.
+- **Real-Time Data**: Finalized user search endpoints to handle `@mentions` and workspace invitation link generators natively.
+- **Data Customization**: Properly synced saved searches state and custom field array reordering payloads.
+- **Profile Assets**: Hooked the avatar uploading function directly to valid cloud-storage mechanisms via the backend API.
+
+### 3. Status
+
+Backend API mock replacement tasks and synchronizations are **completed**:
+- All remaining functional components mapped to live endpoints.
+- Mock storage states and artificial delays removed from the production path.
+- Frontend types effectively bridge to the actual REST API contract, verified by a clean build with zero TypeScript compilation errors.

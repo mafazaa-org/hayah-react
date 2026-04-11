@@ -1,7 +1,5 @@
 import type { Task } from '../types/task';
-
-// Simulated delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { apiClient } from '../apiClient';
 
 export interface BulkEditPayload {
   status?: string;
@@ -13,11 +11,13 @@ export interface BulkEditPayload {
 export const bulkOperationService = {
   /**
    * Bulk-edit multiple tasks with the same update payload.
-   * Returns the updated task objects.
    */
   bulkEdit: async (taskIds: string[], payload: BulkEditPayload): Promise<{ updated: string[] }> => {
-    await delay(400);
-    console.log(`[bulkOperationService] Editing ${taskIds.length} tasks`, payload);
+    await apiClient.patch('/export-import/tasks/bulk', {
+      taskIds,
+      statusId: payload.status,
+      priorityId: payload.priority,
+    });
     return { updated: taskIds };
   },
 
@@ -25,8 +25,9 @@ export const bulkOperationService = {
    * Bulk-delete multiple tasks.
    */
   bulkDelete: async (taskIds: string[]): Promise<{ deleted: string[] }> => {
-    await delay(400);
-    console.log(`[bulkOperationService] Deleting ${taskIds.length} tasks`);
+    await apiClient.post('/export-import/tasks/bulk-delete', {
+      taskIds,
+    });
     return { deleted: taskIds };
   },
 
@@ -34,8 +35,10 @@ export const bulkOperationService = {
    * Bulk-move tasks to a different column/status.
    */
   bulkMove: async (taskIds: string[], targetStatus: string): Promise<{ moved: string[] }> => {
-    await delay(400);
-    console.log(`[bulkOperationService] Moving ${taskIds.length} tasks to ${targetStatus}`);
+    await apiClient.patch('/export-import/tasks/bulk', {
+      taskIds,
+      statusId: targetStatus,
+    });
     return { moved: taskIds };
   },
 };

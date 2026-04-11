@@ -39,7 +39,7 @@ export const userService = {
   },
 
   updateProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-    const response = await apiClient.patch<UserProfile>('/users/me', data);
+    const response = await apiClient.put<UserProfile>('/users/me', data);
     return response.data;
   },
 
@@ -55,18 +55,11 @@ export const userService = {
   },
 
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
-    await apiClient.post('/auth/change-password', { currentPassword, newPassword });
+    await apiClient.put('/users/me/password', { currentPassword, newPassword });
   },
 
   updatePreferences: async (prefs: Partial<UserPreferences>): Promise<UserPreferences> => {
-    // Assuming a preferences endpoint exists, or we store it in local storage for now if backend is missing
-    try {
-      const response = await apiClient.patch<UserPreferences>('/users/me/preferences', prefs);
-      return response.data;
-    } catch (e) {
-      console.warn('Backend preferences update failed, falling back to local storage', e);
-      // Fallback or mock
-      return prefs as UserPreferences;
-    }
+    const response = await apiClient.put<UserPreferences>('/users/me/settings', prefs);
+    return response.data;
   }
 };

@@ -1,4 +1,5 @@
 import type { FilterOptions } from '../components/Kanban/FilterPanel';
+import { apiClient } from '../apiClient';
 
 export interface FilterPreset {
   id: string;
@@ -8,51 +9,38 @@ export interface FilterPreset {
   createdAt: string;
 }
 
-const STORAGE_KEY = 'hayah_filter_presets';
-
-function getAllPresets(): FilterPreset[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistPresets(presets: FilterPreset[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(presets));
-}
-
 export const filterService = {
   /**
    * Get all filter presets for a specific list
    */
-  getPresets(listId: string): FilterPreset[] {
-    return getAllPresets().filter(p => p.listId === listId);
+  getPresets: async (listId: string): Promise<FilterPreset[]> => {
+    try {
+      const response = await apiClient.get<FilterPreset[]>('/lists/filter-presets', {
+        params: { listId },
+      });
+      return response.data;
+    } catch {
+      return [];
+    }
   },
 
   /**
    * Save a new filter preset
    */
-  savePreset(listId: string, name: string, filters: FilterOptions): FilterPreset {
-    const presets = getAllPresets();
-    const newPreset: FilterPreset = {
-      id: `preset-${Date.now()}`,
+  savePreset: async (listId: string, name: string, filters: FilterOptions): Promise<FilterPreset> => {
+    const response = await apiClient.post<FilterPreset>('/lists/filter-presets', {
       name,
       listId,
-      filters,
-      createdAt: new Date().toISOString()
-    };
-    presets.push(newPreset);
-    persistPresets(presets);
-    return newPreset;
+      filterConfig: filters,
+      includeArchived: false,
+    });
+    return response.data;
   },
 
   /**
    * Delete a filter preset by ID
    */
-  deletePreset(presetId: string): void {
-    const presets = getAllPresets().filter(p => p.id !== presetId);
-    persistPresets(presets);
-  }
+  deletePreset: async (presetId: string): Promise<void> => {
+    await apiClient.delete(`/lists/filter-presets/${presetId}`);
+  },
 };

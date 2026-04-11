@@ -1,23 +1,24 @@
 import type { ViewConfig, ViewMode } from '../types/view';
-
-const STORAGE_PREFIX = 'hayah_view_config_';
-
-// Simulated delay for async operations
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+import { apiClient } from '../apiClient';
 
 export const viewConfigService = {
   /**
    * Get saved view configuration for a list
    */
   getViewConfig: async (listId: string): Promise<ViewConfig | null> => {
-    await delay(200);
-
     try {
-      const stored = localStorage.getItem(`${STORAGE_PREFIX}${listId}`);
-      if (stored) {
-        const config = JSON.parse(stored) as ViewConfig;
-        console.log(`Loaded view config for list ${listId}:`, config);
-        return config;
+      const response = await apiClient.get<Array<Record<string, unknown>>>('/lists/views', {
+        params: { listId },
+      });
+      const views = response.data;
+      if (views && views.length > 0) {
+        const view = views[0];
+        return {
+          listId,
+          mode: (view.type as ViewMode) || 'kanban',
+          settings: (view.config as ViewConfig['settings']) || { density: 'comfortable' },
+          updatedAt: view.updatedAt as string,
+        };
       }
     } catch (error) {
       console.error('Failed to load view config:', error);
@@ -28,8 +29,8 @@ export const viewConfigService = {
       listId,
       mode: 'kanban',
       settings: {
-        density: 'comfortable'
-      }
+        density: 'comfortable',
+      },
     };
   },
 
@@ -37,20 +38,39 @@ export const viewConfigService = {
    * Save view configuration for a list
    */
   saveViewConfig: async (listId: string, mode: ViewMode, settings?: ViewConfig['settings']): Promise<ViewConfig> => {
-    await delay(200);
+    // Check if a view already exists for this list
+    let existingViewId: string | null = null;
+    try {
+      const response = await apiClient.get<Array<Record<string, unknown>>>('/lists/views', {
+        params: { listId },
+      });
+      if (response.data && response.data.length > 0) {
+        existingViewId = response.data[0].id as string;
+      }
+    } catch {
+      // No existing view
+    }
 
     const config: ViewConfig = {
       listId,
       mode,
       settings,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
 
-    try {
-      localStorage.setItem(`${STORAGE_PREFIX}${listId}`, JSON.stringify(config));
-      console.log(`Saved view config for list ${listId}:`, config);
-    } catch (error) {
-      console.error('Failed to save view config:', error);
+    if (existingViewId) {
+      await apiClient.put(`/lists/views/${existingViewId}`, {
+        name: `${mode} View`,
+        type: mode,
+        config: settings || {},
+      });
+    } else {
+      await apiClient.post('/lists/views', {
+        name: `${mode} View`,
+        listId,
+        type: mode,
+        config: settings || {},
+      });
     }
 
     return config;
@@ -60,11 +80,15 @@ export const viewConfigService = {
    * Clear view configuration for a list
    */
   clearViewConfig: async (listId: string): Promise<void> => {
-    await delay(200);
-
     try {
-      localStorage.removeItem(`${STORAGE_PREFIX}${listId}`);
-      console.log(`Cleared view config for list ${listId}`);
+      const response = await apiClient.get<Array<Record<string, unknown>>>('/lists/views', {
+        params: { listId },
+      });
+      if (response.data) {
+        for (const view of response.data) {
+          await apiClient.delete(`/lists/views/${view.id}`);
+        }
+      }
     } catch (error) {
       console.error('Failed to clear view config:', error);
     }
@@ -74,24 +98,17 @@ export const viewConfigService = {
    * Get all saved view configurations
    */
   getAllViewConfigs: async (): Promise<ViewConfig[]> => {
-    await delay(200);
-
-    const configs: ViewConfig[] = [];
-
     try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key?.startsWith(STORAGE_PREFIX)) {
-          const stored = localStorage.getItem(key);
-          if (stored) {
-            configs.push(JSON.parse(stored));
-          }
-        }
-      }
+      const response = await apiClient.get<Array<Record<string, unknown>>>('/lists/views');
+      return response.data.map((view) => ({
+        listId: view.listId as string,
+        mode: (view.type as ViewMode) || 'kanban',
+        settings: (view.config as ViewConfig['settings']) || {},
+        updatedAt: view.updatedAt as string,
+      }));
     } catch (error) {
       console.error('Failed to load all view configs:', error);
+      return [];
     }
-
-    return configs;
-  }
+  },
 };
