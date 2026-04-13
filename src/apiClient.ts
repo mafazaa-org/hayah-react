@@ -1,10 +1,8 @@
 import axios, { AxiosError } from 'axios'
 import type {
   AxiosInstance,
-  AxiosResponse,
   InternalAxiosRequestConfig,
-} from 'axios'
-import { Navigate } from 'react-router-dom';
+} from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 const JWT_STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY
@@ -46,24 +44,19 @@ apiClient.interceptors.request.use(
 )
 
 apiClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response) => response,
   async (error: AxiosError) => {
     if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        const tokenKey = JWT_STORAGE_KEY || 'hayah_auth_token'
-        window.localStorage.removeItem(tokenKey)
-
-        const currentPath = window.location.pathname
-        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
-        if (!publicPaths.includes(currentPath)) {
-          Navigate({to: '/login', replace: true });
-        }
-      }
+      // Broadcast event instead of redirecting
+      window.dispatchEvent(new Event('auth:unauthorized'));
+      
+      // Also clean up token
+      const tokenKey = JWT_STORAGE_KEY || 'hayah_auth_token';
+      localStorage.removeItem(tokenKey);
     }
-
-    return Promise.reject(error)
+    return Promise.reject(error);
   },
-)
+);
 
 export { apiClient }
 

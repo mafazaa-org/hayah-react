@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFolderStore } from '../store/useFolderStore';
 import type { NavigationItem } from '../services/folderService';
@@ -14,8 +14,10 @@ import {
   CheckCircle2,
   ListTodo,
   Plus,
+  Loader2,
 } from 'lucide-react';
 import { useListStore } from '../store/useListStore';
+import { useAuth } from '../context/AuthContext';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -59,21 +61,25 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const { tree, fetchTree, isLoading } = useFolderStore();
   const { openCreateModal } = useListStore();
+  const { isAuthenticated } = useAuth();
+  const [ ready, setReady ] = useState(false);
 
   useEffect(() => {
-    fetchTree();
-  }, [fetchTree]);
+    // Wait 10ms to ensure token is persisted and auth context updated
+    const timer = setTimeout(() => setReady(true), 10);
+    if (isAuthenticated) {
+      fetchTree();
+    }
+    return () => clearTimeout(timer);
+  }, [fetchTree, isAuthenticated]);
 
-  const lists = useMemo(() => collectLists(tree), [tree]);
-  const folderCount = useMemo(() => countFolders(tree), [tree]);
-
-  // Derive some mock stats from the tree
-  const stats = useMemo(
-    () => ({
-      lists: lists.length,
-      folders: folderCount,
-    }),
-    [lists.length, folderCount]
+  if (!isAuthenticated) return null; // or <Navigate to="/login" />
+  if (!ready) return (
+    <div className="h-full overflow-auto p-6 lg:p-8">
+    <div className="flex items-center justify-center h-full">
+      <Loader2 size={24} className="animate-spin text-sky-500" /> 
+      </div>
+    </div>
   );
 
   return (
@@ -89,8 +95,8 @@ export function DashboardPage() {
 
         {/* ===== Stat cards ===== */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={FolderOpen} label="مجلدات" value={stats.folders} color="text-amber-400" />
-          <StatCard icon={Hash} label="قوائم" value={stats.lists} color="text-sky-400" />
+          <StatCard icon={FolderOpen} label="مجلدات" value={countFolders(tree)} color="text-amber-400" />
+          <StatCard icon={Hash} label="قوائم" value={collectLists(tree).length} color="text-sky-400" />
           <StatCard icon={ListTodo} label="مهام مفتوحة" value="—" color="text-purple-400" />
           <StatCard icon={CheckCircle2} label="مهام مكتملة" value="—" color="text-emerald-400" />
         </section>
@@ -118,7 +124,7 @@ export function DashboardPage() {
                 <div key={i} className="h-24 rounded-xl bg-slate-900/50 border border-slate-800 animate-pulse" />
               ))}
             </div>
-          ) : lists.length === 0 ? (
+          ) : collectLists(tree).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-500 gap-2">
               <Hash size={36} className="text-slate-700" />
               <p className="text-sm">لا توجد قوائم بعد. أنشئ قائمتك الأولى!</p>
@@ -132,7 +138,7 @@ export function DashboardPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {lists.slice(0, 6).map(list => (
+              {collectLists(tree).slice(0, 6).map(list => (
                 <button
                   key={list.id}
                   type="button"
