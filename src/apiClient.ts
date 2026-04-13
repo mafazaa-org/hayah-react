@@ -4,6 +4,7 @@ import type {
   AxiosResponse,
   InternalAxiosRequestConfig,
 } from 'axios'
+import { Navigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 const JWT_STORAGE_KEY = import.meta.env.VITE_JWT_STORAGE_KEY
@@ -55,7 +56,7 @@ apiClient.interceptors.response.use(
         const currentPath = window.location.pathname
         const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email']
         if (!publicPaths.includes(currentPath)) {
-          window.location.href = '/login'
+          Navigate({to: '/login', replace: true });
         }
       }
     }

@@ -11,7 +11,7 @@ import { usePresenceStore } from './store/usePresenceStore';
 import { useNotificationStore } from './store/useNotificationStore';
 import { useTaskStore } from './store/useTaskStore';
 import { useTaskDetailStore } from './store/useTaskDetailStore';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary';
 import { usePerformanceMonitor } from './hooks/usePerformanceMonitor';
 
 // Route-level code splitting via React.lazy
